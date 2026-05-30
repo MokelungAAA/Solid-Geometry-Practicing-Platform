@@ -104,6 +104,17 @@ html, body {
     overflow: hidden;
 }
 
+/* ===== Tab内容面板 ===== */
+.tab-content {
+    display: none;
+    flex: 1;
+    overflow: hidden;
+}
+
+.tab-content.active {
+    display: flex;
+}
+
 /* ===== 左侧面板 ===== */
 .left-panel {
     width: 320px;
@@ -145,7 +156,8 @@ html, body {
     background: var(--md-surface-dim);
 }
 
-#canvas-wrapper {
+#canvas-wrapper,
+#canvas-wrapper-practice {
     width: 100%;
     height: 100%;
 }
@@ -692,4 +704,82 @@ html, body {
     display: block;
     width: 100%;
     height: 200px;
+}
+
+/* ===== 补充缺失的样式 ===== */
+
+/* 按钮组 */
+.btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--md-spacing-xs);
+}
+
+/* 控制组 */
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-spacing-xs);
+}
+
+/* 控制标签 */
+.control-label {
+    font-size: var(--md-font-size-xs);
+    color: var(--md-on-surface-variant);
+}
+
+/* 平面指示器 */
+.plane-indicator {
+    position: absolute;
+    bottom: 48px;
+    left: var(--md-spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--md-spacing-sm);
+    padding: var(--md-spacing-xs) var(--md-spacing-md);
+    background: var(--md-backdrop-bg);
+    backdrop-filter: var(--md-backdrop);
+    border-radius: var(--md-radius-xl);
+    font-size: var(--md-font-size-xs);
+    color: var(--md-on-surface-variant);
+    z-index: 10;
+}
+
+/* 展开指示器 */
+.unfold-indicator {
+    position: absolute;
+    top: var(--md-spacing-lg);
+    right: var(--md-spacing-lg);
+    padding: var(--md-spacing-xs) var(--md-spacing-md);
+    background: var(--md-backdrop-bg);
+    backdrop-filter: var(--md-backdrop);
+    border-radius: var(--md-radius-xl);
+    font-size: var(--md-font-size-sm);
+    color: var(--md-primary);
+    z-index: 10;
+}
+
+/* 顶点选择器 */
+.vertex-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--md-spacing-xs);
+}
+
+/* 选项文本 */
+.option-text {
+    font-size: var(--md-font-size-sm);
+    color: var(--md-on-surface);
+}
+
+/* 信息卡片z-index */
+.geometry-info-card {
+    z-index: 10;
+}
+
+/* 按钮激活状态 */
+.btn-secondary.active {
+    background: var(--md-primary-lightest);
+    color: var(--md-primary-dark);
+    border-color: var(--md-primary-lighter);
 }

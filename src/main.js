@@ -381,9 +381,12 @@ class SolidGeometryApp {
 
         this.currentTab = tabId;
 
-        // 切换渲染器容器
-        const containerId = tabId === 'view' ? 'canvas-wrapper' : 'canvas-wrapper-practice';
-        this.rendererManager.switchContainer(containerId);
+        // 切换渲染器容器（只在view和practice之间切换，records不需要3D渲染器）
+        if (tabId === 'view') {
+            this.rendererManager.switchContainer('canvas-wrapper');
+        } else if (tabId === 'practice') {
+            this.rendererManager.switchContainer('canvas-wrapper-practice');
+        }
 
         // 如果切换到记录标签，更新记录列表
         if (tabId === 'records') {
@@ -453,7 +456,7 @@ class SolidGeometryApp {
         if (nameEl) nameEl.textContent = GEOMETRY_NAMES[type] || type;
         if (vertexCountEl) vertexCountEl.textContent = config.vertices ? Object.keys(config.vertices).length : '-';
         if (edgeCountEl) edgeCountEl.textContent = config.edges ? config.edges.length : '-';
-        if (faceCountEl) faceCountEl.textContent = config.faces ? config.faces.length : '-';
+        if (faceCountEl) faceCountEl.textContent = config.faces ? Object.keys(config.faces).length : '-';
     }
 
     /**

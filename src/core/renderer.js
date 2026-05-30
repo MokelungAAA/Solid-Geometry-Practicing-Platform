@@ -26,8 +26,8 @@ export class RendererManager {
         }
 
         this.currentContainer = container;
-        const width = container.clientWidth;
-        const height = container.clientHeight;
+        const width = container.clientWidth || window.innerWidth;
+        const height = container.clientHeight || window.innerHeight;
 
         // WebGL渲染器
         this.renderer = new THREE.WebGLRenderer({
