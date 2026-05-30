@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
-  <script type="module" crossorigin src="/Solid-Geometry-Practicing-Platform/assets/index-DTCH7pTj.js"></script>
-  <link rel="modulepreload" crossorigin href="/Solid-Geometry-Practicing-Platform/assets/three-D7PRIIcA.js">
+  <script type="module" crossorigin src="/Solid-Geometry-Practicing-Platform/assets/index-CIymhue-.js"></script>
+  <link rel="modulepreload" crossorigin href="/Solid-Geometry-Practicing-Platform/assets/three-C9Zn1ymT.js">
   <link rel="modulepreload" crossorigin href="/Solid-Geometry-Practicing-Platform/assets/gsap-SFc2wnMY.js">
-  <link rel="stylesheet" crossorigin href="/Solid-Geometry-Practicing-Platform/assets/index-5HRi5EjT.css">
+  <link rel="stylesheet" crossorigin href="/Solid-Geometry-Practicing-Platform/assets/index-Bmwd-fre.css">
 </head>
 <body>
   <!-- Loading Overlay -->
@@ -166,88 +166,99 @@
 
       <!-- Practice Tab Content -->
       <div class="tab-content" id="tab-practice">
-        <!-- Practice Panel -->
-        <div class="practice-panel">
-          <div class="practice-header">
-            <h3>📝 练习模式</h3>
-          </div>
-          <div class="practice-options">
-            <div class="form-group">
-              <label class="form-label">练习范围</label>
-              <select class="select" id="practice-mode">
-                <option value="current">当前几何体</option>
-                <option value="random">随机几何体</option>
-              </select>
+        <!-- Left: Questions & Controls -->
+        <div class="practice-left">
+          <!-- Practice Panel -->
+          <div class="practice-panel">
+            <div class="practice-header">
+              <h3>📝 练习模式</h3>
             </div>
-            <div class="form-group">
-              <label class="form-label">题目数量</label>
-              <select class="select" id="question-count">
-                <option value="3">3题</option>
-                <option value="5" selected>5题</option>
-                <option value="10">10题</option>
-                <option value="15">15题</option>
-              </select>
+            <div class="practice-options">
+              <div class="form-group">
+                <label class="form-label">练习范围</label>
+                <select class="select" id="practice-mode">
+                  <option value="current">当前几何体</option>
+                  <option value="random">随机几何体</option>
+                  <option value="randomGeometry">随机几何体练习</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">题目数量</label>
+                <select class="select" id="question-count">
+                  <option value="3">3题</option>
+                  <option value="5" selected>5题</option>
+                  <option value="10">10题</option>
+                  <option value="15">15题</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">难度</label>
+                <select class="select" id="difficulty-level">
+                  <option value="mixed">混合</option>
+                  <option value="easy">简单</option>
+                  <option value="medium">中等</option>
+                  <option value="hard">困难</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">知识点</label>
+                <select class="select" id="knowledge-filter" multiple size="3">
+                  <option value="">全部</option>
+                  <option value="line_parallel">线线平行</option>
+                  <option value="line_skew">异面直线</option>
+                  <option value="line_plane_parallel">线面平行</option>
+                  <option value="line_plane_perpendicular">线面垂直</option>
+                  <option value="plane_parallel">面面平行</option>
+                  <option value="plane_perpendicular">面面垂直</option>
+                  <option value="angle_line_line">线线角</option>
+                  <option value="angle_line_plane">线面角</option>
+                  <option value="angle_dihedral">二面角</option>
+                  <option value="volume">体积</option>
+                  <option value="surface_area">表面积</option>
+                  <option value="count_vertex">顶点数</option>
+                  <option value="count_edge">棱数</option>
+                  <option value="count_face">面数</option>
+                  <option value="proof_line_plane_parallel">线面平行证明</option>
+                  <option value="proof_line_plane_perp">线面垂直证明</option>
+                  <option value="proof_plane_parallel">面面平行证明</option>
+                  <option value="proof_plane_perp">面面垂直证明</option>
+                  <option value="proof_skew">异面直线证明</option>
+                </select>
+              </div>
+              <div class="practice-btns">
+                <button class="btn btn-primary btn-sm btn-start-practice" id="btn-start-practice">
+                  <span class="material-symbols-rounded">play_arrow</span>
+                  开始练习
+                </button>
+                <button class="btn btn-outline btn-sm btn-start-practice" id="btn-random-question" title="随机生成一个几何体并开始练习">
+                  <span class="material-symbols-rounded">shuffle</span>
+                  随机生成
+                </button>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">难度</label>
-              <select class="select" id="difficulty-level">
-                <option value="mixed">混合</option>
-                <option value="easy">简单</option>
-                <option value="medium">中等</option>
-                <option value="hard">困难</option>
-              </select>
+
+            <!-- Practice Stats -->
+            <div class="practice-stats">
+              <div class="stat-item"><span class="stat-label">总题数</span><span class="stat-value" id="total-questions">0</span></div>
+              <div class="stat-item"><span class="stat-label">正确</span><span class="stat-value" id="correct-count">0</span></div>
+              <div class="stat-item"><span class="stat-label">正确率</span><span class="stat-value" id="accuracy">0%</span></div>
             </div>
-            <div class="form-group">
-              <label class="form-label">知识点</label>
-              <select class="select" id="knowledge-filter" multiple size="3">
-                <option value="">全部</option>
-                <option value="line_parallel">线线平行</option>
-                <option value="line_skew">异面直线</option>
-                <option value="line_plane_parallel">线面平行</option>
-                <option value="line_plane_perpendicular">线面垂直</option>
-                <option value="plane_parallel">面面平行</option>
-                <option value="plane_perpendicular">面面垂直</option>
-                <option value="angle_line_line">线线角</option>
-                <option value="angle_line_plane">线面角</option>
-                <option value="angle_dihedral">二面角</option>
-                <option value="volume">体积</option>
-                <option value="surface_area">表面积</option>
-                <option value="count_vertex">顶点数</option>
-                <option value="count_edge">棱数</option>
-                <option value="count_face">面数</option>
-                <option value="proof_line_plane_parallel">线面平行证明</option>
-                <option value="proof_line_plane_perp">线面垂直证明</option>
-                <option value="proof_plane_parallel">面面平行证明</option>
-                <option value="proof_plane_perp">面面垂直证明</option>
-                <option value="proof_skew">异面直线证明</option>
-              </select>
-            </div>
-            <button class="btn btn-primary btn-block" id="btn-start-practice">
-              <span class="material-symbols-rounded">play_arrow</span>
-              开始练习
-            </button>
-            <button class="btn btn-outline btn-block" id="btn-random-question">
-              <span class="material-symbols-rounded">casino</span>
-              随机一题
-            </button>
           </div>
 
-          <!-- Practice Stats -->
-          <div class="practice-stats">
-            <div class="stat-item"><span class="stat-label">总题数</span><span class="stat-value" id="total-questions">0</span></div>
-            <div class="stat-item"><span class="stat-label">正确</span><span class="stat-value" id="correct-count">0</span></div>
-            <div class="stat-item"><span class="stat-label">正确率</span><span class="stat-value" id="accuracy">0%</span></div>
+          <!-- Question Container -->
+          <div class="question-container" id="question-container">
+            <div class="question-empty-state" id="question-empty-state">
+              <span class="material-symbols-rounded" style="font-size:48px;opacity:0.3">quiz</span>
+              <p>点击「开始练习」或「随机生成」开始做题</p>
+            </div>
           </div>
         </div>
 
-        <!-- Question Container -->
-        <div class="question-container" id="question-container">
-          <!-- Questions will be inserted here -->
-        </div>
-
-        <!-- Canvas Container for 3D Solution -->
-        <div class="canvas-container" id="canvas-wrapper-practice">
-          <!-- Three.js Canvas for 3D solution -->
+        <!-- Right: 3D Canvas Area -->
+        <div class="practice-right">
+          <div class="canvas-container" id="canvas-wrapper-practice">
+            <!-- Three.js Canvas for 3D solution -->
+          </div>
         </div>
       </div>
 
@@ -289,6 +300,42 @@
           <!-- Accuracy Chart -->
           <div class="chart-container">
             <canvas id="accuracy-chart" width="600" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Wrong Questions Panel -->
+        <div class="records-panel wrong-panel">
+          <div class="records-header">
+            <h3>❌ 错题本</h3>
+          </div>
+
+          <!-- Wrong/Correct Toggle -->
+          <div class="wrong-toggle-group">
+            <button class="btn btn-sm btn-outline active" id="btn-show-wrong" data-filter="wrong">
+              <span class="material-symbols-rounded">close</span>
+              错题
+            </button>
+            <button class="btn btn-sm btn-outline" id="btn-show-correct" data-filter="correct">
+              <span class="material-symbols-rounded">check</span>
+              正确
+            </button>
+          </div>
+
+          <!-- Wrong Stats -->
+          <div class="records-stats-grid">
+            <div class="record-stat-card">
+              <div class="record-stat-value" id="wrong-count">0</div>
+              <div class="record-stat-label">错题数</div>
+            </div>
+            <div class="record-stat-card">
+              <div class="record-stat-value" id="wrong-rate">0%</div>
+              <div class="record-stat-label">错题率</div>
+            </div>
+          </div>
+
+          <!-- Wrong Records List -->
+          <div class="records-list" id="wrong-records-list">
+            <!-- Wrong records will be inserted here -->
           </div>
         </div>
 
