@@ -397,6 +397,10 @@ class SolidGeometryApp {
 
   disposeGroup(group) {
     group.traverse(child => {
+      // 清理 CSS2DObject 的 DOM 元素（顶点标签）
+      if (child.isCSS2DObject && child.element && child.element.parentNode) {
+        child.element.parentNode.removeChild(child.element);
+      }
       if (child.geometry) child.geometry.dispose();
       if (child.material) {
         if (Array.isArray(child.material)) {
