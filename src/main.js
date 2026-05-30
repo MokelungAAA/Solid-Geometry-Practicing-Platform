@@ -219,6 +219,8 @@ class SolidGeometryApp {
   initGeometry() {
     this.geometryFactory = new GeometryFactory(this.scene, this.labelRenderer);
     this.unfoldManager = new UnfoldManager(this.scene, this.geometryFactory);
+    // 更新相机宽高比为容器实际尺寸
+    this.onWindowResize();
     this.createGeometry('cube');
   }
 
@@ -329,6 +331,7 @@ class SolidGeometryApp {
     const config = GEOMETRY_CONFIGS[type];
     if (!config) return;
     this.geometryGroup = this.geometryFactory.createGeometry(config, { showFaces: true, showEdges: true, showVertices: true, showLabels: true });
+    this.scene.add(this.geometryGroup);
     this.currentGeometryType = type;
     if (config.unfoldConfig) {
       this.unfoldManager.createUnfoldGroup(config, this.geometryFactory.currentVertices);
