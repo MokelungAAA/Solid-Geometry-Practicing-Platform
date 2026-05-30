@@ -3,56 +3,327 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>立体几何练习平台</title>
-
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Material You 样式 -->
-  <link rel="stylesheet" href="./css/material-you.css">
-  <link rel="stylesheet" href="./css/material-layout.css">
-  <link rel="stylesheet" href="./css/material-components.css">
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: 'Noto Sans SC', sans-serif;
-    }
-  </style>
+  <title>立体几何交互练习平台</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
+  <link rel="stylesheet" href="/src/styles/index.css">
 </head>
 <body>
-  <!-- 主容器 -->
-  <div id="app">
-    <!-- 顶部栏 -->
-    <header id="header">
-      <h1>立体几何练习平台</h1>
-    </header>
-
-    <!-- 主内容区 -->
-    <main id="main-content">
-      <!-- 左侧面板 -->
-      <aside id="left-panel">
-        <div id="geometry-list"></div>
-      </aside>
-
-      <!-- 3D 场景容器 -->
-      <div id="scene-container"></div>
-    </main>
-
-    <!-- 底部工具栏 -->
-    <footer id="toolbar"></footer>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">正在初始化 3D 引擎...</div>
+    </div>
   </div>
 
-  <!-- 信息卡片 -->
-  <div id="info-card" class="glass" style="display: none;"></div>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="logo-icon material-symbols-rounded">view_in_ar</span>
+      <h1>立体几何练习平台</h1>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-ghost btn-icon" id="btn-settings" title="设置">
+        <span class="material-symbols-rounded">settings</span>
+      </button>
+    </div>
+  </header>
 
-  <!-- Toast 提示容器 -->
-  <div id="toast-container"></div>
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Left Panel -->
+    <aside class="left-panel">
+      <!-- Geometry Selector -->
+      <div class="panel-section geometry-section">
+        <div class="section-header">
+          <h3 class="section-title">几何体</h3>
+          <button class="btn btn-ghost btn-icon btn-sm" id="btn-random" title="随机生成">
+            <span class="material-symbols-rounded">casino</span>
+          </button>
+        </div>
+        <div class="geometry-scroll" id="geometry-selector">
+          <!-- Geometry cards will be inserted here -->
+        </div>
+      </div>
 
-  <script type="module" src="./src/main.js"></script>
+      <!-- Geometry Info Card -->
+      <div class="panel-section info-card-section" id="geometry-info-card">
+        <div class="info-card-header">
+          <div class="info-card-title-row">
+            <h3 id="geometry-name">立方体</h3>
+            <button class="btn btn-ghost btn-icon btn-sm" id="btn-edit" title="编辑">
+              <span class="material-symbols-rounded">edit</span>
+            </button>
+          </div>
+          <button class="toggle-btn" id="toggle-info-card">
+            <span class="material-symbols-rounded">expand_less</span>
+          </button>
+        </div>
+        <div class="info-card-body">
+          <div class="info-stats-grid">
+            <div class="info-stat"><div class="info-stat-value" id="vertex-count">8</div><div class="info-stat-label">顶点</div></div>
+            <div class="info-stat"><div class="info-stat-value" id="edge-count">12</div><div class="info-stat-label">棱</div></div>
+            <div class="info-stat"><div class="info-stat-value" id="face-count">6</div><div class="info-stat-label">面</div></div>
+          </div>
+          <div class="info-card-row">
+            <span class="info-card-label">截面工具</span>
+            <button class="btn btn-sm btn-outline" id="btn-cross-section-mode" style="width:auto">进入截面选点模式</button>
+          </div>
+          <div class="info-card-row" id="section-points-container" style="display:none">
+            <span class="info-card-label">已选截面点</span>
+            <div class="section-points-display" id="section-points-display">未选择任何顶点</div>
+          </div>
+          <div class="info-card-actions" id="section-mode-hint" style="display:none">
+            <button class="btn btn-sm btn-primary" id="btn-create-section" style="width:auto">确认生成截面</button>
+            <button class="btn btn-sm btn-outline" id="btn-clear-section" style="width:auto">清除选点</button>
+            <div class="vertex-selector" id="vertex-selector"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center: Canvas Area -->
+    <div class="center-area">
+      <!-- View Tab Content -->
+      <div class="tab-content active" id="tab-view">
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+          <!-- Display Mode -->
+          <div class="control-group">
+            <div class="control-label">显示模式</div>
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline active" id="btn-solid" title="实体">■</button>
+              <button class="btn btn-sm btn-outline" id="btn-wireframe" title="线框">◇</button>
+              <button class="btn btn-sm btn-outline" id="btn-hidden-edges" title="隐线">◻</button>
+            </div>
+          </div>
+
+          <!-- Opacity -->
+          <div class="control-group">
+            <div class="control-label">透明度 <span id="opacity-value">0.60</span></div>
+            <input type="range" class="slider" id="opacity-slider" min="0" max="1" step="0.05" value="0.6">
+          </div>
+
+          <!-- View Controls -->
+          <div class="control-group">
+            <div class="control-label">视角</div>
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline" id="btn-front">正</button>
+              <button class="btn btn-sm btn-outline" id="btn-side">侧</button>
+              <button class="btn btn-sm btn-outline" id="btn-perspective">透</button>
+            </div>
+          </div>
+
+          <!-- Toggles -->
+          <div class="control-group">
+            <div class="control-label">辅助</div>
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline active" id="btn-grid" title="网格">▦</button>
+              <button class="btn btn-sm btn-outline active" id="btn-axes" title="坐标轴">╋</button>
+            </div>
+          </div>
+
+          <!-- Unfold -->
+          <div class="control-group">
+            <div class="control-label">展开</div>
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline" id="btn-unfold">展开</button>
+              <button class="btn btn-sm btn-outline" id="btn-fold">折叠</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="canvas-container" id="canvas-wrapper">
+          <!-- Three.js Canvas -->
+        </div>
+
+        <!-- Unfold Slider -->
+        <div class="unfold-control">
+          <div class="unfold-slider-label">展开进度</div>
+          <input type="range" class="slider" id="unfold-slider" min="0" max="100" value="0">
+          <span id="unfold-value">0%</span>
+        </div>
+
+        <!-- Controls Hint -->
+        <div class="controls-hint" id="controls-hint">
+          <span class="controls-hint-item">🖱️ 左键旋转</span>
+          <span class="controls-hint-item">🖱️ 右键平移</span>
+          <span class="controls-hint-item">🖱️ 滚轮缩放</span>
+          <span class="controls-hint-item">📱 双指缩放</span>
+        </div>
+
+        <!-- Plane Indicator -->
+        <div class="plane-indicator" id="plane-indicator">
+          <div class="plane-indicator-label">当前平面: XZ (水平)</div>
+        </div>
+      </div>
+
+      <!-- Practice Tab Content -->
+      <div class="tab-content" id="tab-practice">
+        <!-- Practice Panel -->
+        <div class="practice-panel">
+          <div class="practice-header">
+            <h3>📝 练习模式</h3>
+          </div>
+          <div class="practice-options">
+            <div class="form-group">
+              <label class="form-label">练习范围</label>
+              <select class="select" id="practice-mode">
+                <option value="current">当前几何体</option>
+                <option value="random">随机几何体</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">题目数量</label>
+              <select class="select" id="question-count">
+                <option value="3">3题</option>
+                <option value="5" selected>5题</option>
+                <option value="10">10题</option>
+                <option value="15">15题</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">难度</label>
+              <select class="select" id="difficulty-level">
+                <option value="mixed">混合</option>
+                <option value="easy">简单</option>
+                <option value="medium">中等</option>
+                <option value="hard">困难</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">知识点</label>
+              <select class="select" id="knowledge-filter" multiple size="3">
+                <option value="">全部</option>
+                <option value="line_parallel">线线平行</option>
+                <option value="line_skew">异面直线</option>
+                <option value="line_plane_parallel">线面平行</option>
+                <option value="line_plane_perpendicular">线面垂直</option>
+                <option value="plane_parallel">面面平行</option>
+                <option value="plane_perpendicular">面面垂直</option>
+                <option value="angle_line_line">线线角</option>
+                <option value="angle_line_plane">线面角</option>
+                <option value="angle_dihedral">二面角</option>
+                <option value="volume">体积</option>
+                <option value="surface_area">表面积</option>
+                <option value="count_vertex">顶点数</option>
+                <option value="count_edge">棱数</option>
+                <option value="count_face">面数</option>
+                <option value="proof_line_plane_parallel">线面平行证明</option>
+                <option value="proof_line_plane_perp">线面垂直证明</option>
+                <option value="proof_plane_parallel">面面平行证明</option>
+                <option value="proof_plane_perp">面面垂直证明</option>
+                <option value="proof_skew">异面直线证明</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-block" id="btn-start-practice">
+              <span class="material-symbols-rounded">play_arrow</span>
+              开始练习
+            </button>
+            <button class="btn btn-outline btn-block" id="btn-random-question">
+              <span class="material-symbols-rounded">casino</span>
+              随机一题
+            </button>
+          </div>
+
+          <!-- Practice Stats -->
+          <div class="practice-stats">
+            <div class="stat-item"><span class="stat-label">总题数</span><span class="stat-value" id="total-questions">0</span></div>
+            <div class="stat-item"><span class="stat-label">正确</span><span class="stat-value" id="correct-count">0</span></div>
+            <div class="stat-item"><span class="stat-label">正确率</span><span class="stat-value" id="accuracy">0%</span></div>
+          </div>
+        </div>
+
+        <!-- Question Container -->
+        <div class="question-container" id="question-container">
+          <!-- Questions will be inserted here -->
+        </div>
+
+        <!-- Canvas Container for 3D Solution -->
+        <div class="canvas-container" id="canvas-wrapper-practice">
+          <!-- Three.js Canvas for 3D solution -->
+        </div>
+      </div>
+
+      <!-- Records Tab Content -->
+      <div class="tab-content" id="tab-records">
+        <!-- Records Panel -->
+        <div class="records-panel">
+          <div class="records-header">
+            <h3>📊 做题记录</h3>
+            <div class="records-actions">
+              <button class="btn btn-sm btn-outline" id="btn-export-records">
+                <span class="material-symbols-rounded">download</span>
+                导出
+              </button>
+              <button class="btn btn-sm btn-outline" id="btn-import-records">
+                <span class="material-symbols-rounded">upload</span>
+                导入
+              </button>
+              <input type="file" id="import-file-input" accept=".json" style="display:none">
+            </div>
+          </div>
+
+          <!-- Records Stats -->
+          <div class="records-stats-grid">
+            <div class="record-stat-card">
+              <div class="record-stat-value" id="total-practices">0</div>
+              <div class="record-stat-label">练习次数</div>
+            </div>
+            <div class="record-stat-card">
+              <div class="record-stat-value" id="avg-accuracy">0%</div>
+              <div class="record-stat-label">平均正确率</div>
+            </div>
+            <div class="record-stat-card">
+              <div class="record-stat-value" id="total-time">0分钟</div>
+              <div class="record-stat-label">累计用时</div>
+            </div>
+          </div>
+
+          <!-- Accuracy Chart -->
+          <div class="chart-container">
+            <canvas id="accuracy-chart" width="600" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Records List -->
+        <div class="records-list" id="records-list">
+          <!-- Records will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Tab Navigation -->
+    <div class="right-panel">
+      <div class="tab-bar">
+        <button class="tab-item active" data-tab="view">
+          <span class="material-symbols-rounded tab-icon">view_in_ar</span>
+          <span class="tab-label">查看</span>
+        </button>
+        <button class="tab-item" data-tab="practice">
+          <span class="material-symbols-rounded tab-icon">quiz</span>
+          <span class="tab-label">练习</span>
+        </button>
+        <button class="tab-item" data-tab="records">
+          <span class="material-symbols-rounded tab-icon">bar_chart</span>
+          <span class="tab-label">记录</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Status Bar -->
+  <footer class="status-bar">
+    <span id="status-text">就绪</span>
+    <span id="fps-counter">--</span>
+  </footer>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>

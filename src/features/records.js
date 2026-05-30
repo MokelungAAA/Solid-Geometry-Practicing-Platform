@@ -7,6 +7,7 @@ export class RecordsManager {
   constructor() {
     this.records = [];
     this.currentSession = null;
+    this.loadFromStorage();
   }
 
   startSession(geometryType) {
@@ -19,73 +20,115 @@ export class RecordsManager {
     return this.currentSession;
   }
 
-  addQuestion(question, answer, isCorrect) {
-    if (!this.currentSession) {
-      return null;
+  addRecord(record) {
+    if (!record) return false;
+    record.id = Date.now();
+    record.timestamp = new Date().toISOString();
+    this.records.unshift(record);
+    if (this.records.length > 100) {
+      this.records = this.records.slice(0, 100);
     }
-    const record = {
-      questionId: question.id,
-      questionText: question.questionText,
-      answer,
-      correctAnswer: question.correctAnswer,
-      isCorrect,
-      timestamp: Date.now()
-    };
-    this.currentSession.questions.push(record);
-    if (isCorrect) {
-      this.currentSession.score++;
-    }
-    return record;
+    this.saveToStorage();
+    return true;
   }
 
-  endSession() {
-    if (!this.currentSession) {
-      return null;
+  deleteRecord(index) {
+    if (index >= 0 && index < this.records.length) {
+      this.records.splice(index, 1);
+      this.saveToStorage();
+      return true;
     }
-    this.currentSession.endTime = Date.now();
-    this.currentSession.duration = this.currentSession.endTime - this.currentSession.startTime;
-    this.currentSession.totalQuestions = this.currentSession.questions.length;
-    this.currentSession.accuracy = this.currentSession.totalQuestions > 0
-      ? (this.currentSession.score / this.currentSession.totalQuestions * 100).toFixed(2)
-      : 0;
-    this.records.push(this.currentSession);
-    const session = this.currentSession;
-    this.currentSession = null;
-    this.saveToStorage();
-    return session;
+    return false;
   }
 
   getRecords() {
     return this.records;
   }
 
-  getRecordsByGeometryType(type) {
-    return this.records.filter(r => r.geometryType === type);
-  }
-
-  getRecordsByDate(date) {
-    return this.records.filter(r => {
-      const recordDate = new Date(r.startTime).toDateString();
-      return recordDate === date.toDateString();
-    });
-  }
-
   getStats() {
-    const totalSessions = this.records.length;
-    const totalQuestions = this.records.reduce((sum, r) => sum + r.totalQuestions, 0);
-    const totalCorrect = this.records.reduce((sum, r) => sum + r.score, 0);
-    const avgAccuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions * 100).toFixed(2) : 0;
+    const totalPractices = this.records.length;
+    const totalQuestions = this.records.reduce((sum, r) => sum + (r.stats?.total || 0), 0);
+    const totalCorrect = this.records.reduce((sum, r) => sum + (r.stats?.correct || 0), 0);
+    const totalTime = this.records.reduce((sum, r) => sum + (r.totalTime || 0), 0);
+    const avgAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+
     return {
-      totalSessions,
+      totalPractices,
       totalQuestions,
       totalCorrect,
-      avgAccuracy: parseFloat(avgAccuracy)
+      totalTime,
+      avgAccuracy
     };
   }
 
-  clearRecords() {
-    this.records = [];
-    this.saveToStorage();
+  getAccuracyTrend(days = 7) {
+    const trend = [];
+    const today = new Date();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const dayRecords = this.records.filter(r => {
+        const recordDate = new Date(r.date || r.timestamp).toISOString().split('T')[0];
+        return recordDate === dateStr;
+      });
+
+      const totalQuestions = dayRecords.reduce((sum, r) => sum + (r.stats?.total || 0), 0);
+      const totalCorrect = dayRecords.reduce((sum, r) => sum + (r.stats?.correct || 0), 0);
+      const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+
+      trend.push({
+        date: dateStr,
+        totalQuestions,
+        totalCorrect,
+        accuracy
+      });
+    }
+    return trend;
+  }
+
+  exportToJSON() {
+    try {
+      const data = JSON.stringify(this.records, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `geometry-records-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return true;
+    } catch (e) {
+      console.error('Export failed:', e);
+      return false;
+    }
+  }
+
+  importFromJSON(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (Array.isArray(data)) {
+            this.records = [...data, ...this.records];
+            if (this.records.length > 100) {
+              this.records = this.records.slice(0, 100);
+            }
+            this.saveToStorage();
+            resolve({ imported: data.length });
+          } else {
+            reject(new Error('无效的JSON格式'));
+          }
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(new Error('文件读取失败'));
+      reader.readAsText(file);
+    });
   }
 
   saveToStorage() {
@@ -107,22 +150,8 @@ export class RecordsManager {
     }
   }
 
-  exportRecords() {
-    return JSON.stringify(this.records, null, 2);
-  }
-
-  importRecords(json) {
-    try {
-      const data = JSON.parse(json);
-      if (Array.isArray(data)) {
-        this.records = data;
-        this.saveToStorage();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      console.error('Failed to import records:', e);
-      return false;
-    }
+  clearRecords() {
+    this.records = [];
+    this.saveToStorage();
   }
 }

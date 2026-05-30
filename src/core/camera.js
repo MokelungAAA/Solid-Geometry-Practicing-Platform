@@ -4,40 +4,29 @@
  */
 
 import * as THREE from 'three';
-import { SIZES } from '../utils/constants.js';
 
 export class CameraManager {
-  constructor(container) {
-    this.container = container;
-    this.width = container.clientWidth || SIZES.scene.width;
-    this.height = container.clientHeight || SIZES.scene.height;
-    
+  constructor() {
     this.init();
   }
 
   init() {
     // 创建透视相机
     this.camera = new THREE.PerspectiveCamera(
-      SIZES.camera.fov,
-      this.width / this.height,
-      SIZES.camera.near,
-      SIZES.camera.far
+      45,  // fov
+      window.innerWidth / window.innerHeight,  // aspect
+      0.1,  // near
+      100   // far
     );
-    
+
     // 设置初始位置
-    this.camera.position.set(
-      SIZES.camera.position.x,
-      SIZES.camera.position.y,
-      SIZES.camera.position.z
-    );
-    
+    this.camera.position.set(5, 4, 5);
+
     // 看向原点
     this.camera.lookAt(0, 0, 0);
   }
 
   updateSize(width, height) {
-    this.width = width;
-    this.height = height;
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }

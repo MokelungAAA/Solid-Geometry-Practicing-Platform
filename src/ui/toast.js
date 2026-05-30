@@ -30,17 +30,17 @@ export class ToastManager {
 
   createToast(message, type) {
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
+    toast.className = `toast ${type}`;
     toast.innerHTML = `
       <div class="toast-content">
         <span class="toast-icon">${this.getIcon(type)}</span>
         <span class="toast-message">${message}</span>
       </div>
     `;
-    
+
     // 添加动画
-    toast.style.animation = 'toast-slide-in 0.3s ease-out';
-    
+    toast.style.animation = 'slideIn 0.3s ease-out';
+
     return toast;
   }
 
@@ -56,8 +56,8 @@ export class ToastManager {
 
   remove(toast) {
     if (!toast || !toast.parentNode) return;
-    
-    toast.style.animation = 'toast-slide-out 0.3s ease-in';
+
+    toast.style.animation = 'slideOut 0.3s ease-in';
     setTimeout(() => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);

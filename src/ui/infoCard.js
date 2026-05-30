@@ -8,7 +8,7 @@ import { GEOMETRY_DETAILS } from '../geometry/configs.js';
 
 export class InfoCardManager {
   constructor() {
-    this.card = document.getElementById('info-card');
+    this.card = document.getElementById('geometry-info-card');
     this.currentGeometry = null;
   }
 

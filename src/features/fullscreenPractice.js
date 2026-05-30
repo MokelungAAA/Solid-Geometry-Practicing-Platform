@@ -55,11 +55,12 @@ export class FullscreenPracticeManager {
 
   bindEvents() {
     document.getElementById('fullscreen-back').addEventListener('click', () => this.exit());
-    document.addEventListener('keydown', (e) => {
+    this._keydownHandler = (e) => {
       if (e.key === 'Escape' && this.isActive) {
         this.exit();
       }
-    });
+    };
+    document.addEventListener('keydown', this._keydownHandler);
   }
 
   show() {
@@ -158,6 +159,10 @@ export class FullscreenPracticeManager {
 
   dispose() {
     this.exit();
+    if (this._keydownHandler) {
+      document.removeEventListener('keydown', this._keydownHandler);
+      this._keydownHandler = null;
+    }
     if (this.container) {
       this.container.remove();
       this.container = null;

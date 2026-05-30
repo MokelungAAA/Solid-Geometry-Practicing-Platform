@@ -59,9 +59,9 @@ export class ResponsiveManager {
   }
 
   applyResponsiveLayout(breakpoint) {
-    const leftPanel = document.getElementById('left-panel');
+    const leftPanel = document.getElementById('sidebar-left');
     const toolbar = document.getElementById('toolbar');
-    const canvas = document.getElementById('canvas');
+    const canvas = document.getElementById('canvas-wrapper');
     if (!leftPanel || !toolbar || !canvas) return;
     switch (breakpoint) {
       case 'mobile':

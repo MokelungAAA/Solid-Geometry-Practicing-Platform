@@ -139,6 +139,9 @@ export const ANIMATION = {
 
 export const STORAGE_KEYS = {
   practiceRecords: 'solid-geometry-practice-records',
+  practice_stats: 'solid-geometry-practice-stats',
+  practice_records: 'solid-geometry-practice-records',
+  practice_answered: 'solid-geometry-practice-answered',
   settings: 'solid-geometry-settings',
   theme: 'solid-geometry-theme'
 };

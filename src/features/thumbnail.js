@@ -1,213 +1,295 @@
 /**
  * 几何体缩略图生成器
- * 使用离屏渲染生成几何体的3D预览图
+ * 使用 Canvas 2D 绘制几何体预览图
  */
 
-import * as THREE from 'three';
-
-export class ThumbnailGenerator {
-    constructor() {
-        // 创建离屏渲染器
-        this.renderer = new THREE.WebGLRenderer({
-            antialias: true,
-            alpha: true
-        });
-        this.renderer.setSize(120, 120);
-        this.renderer.setClearColor(0x000000, 0);
-
-        // 创建离屏场景
-        this.scene = new THREE.Scene();
-
-        // 创建相机
-        this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-        this.camera.position.set(3, 2, 3);
-        this.camera.lookAt(0, 0, 0);
-
-        // 添加光源
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        this.scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 5, 5);
-        this.scene.add(directionalLight);
-
-        // 缓存
-        this.cache = new Map();
-    }
-
-    /**
-     * 生成几何体缩略图
-     * @param {string} geometryType - 几何体类型
-     * @returns {string} - 图片的DataURL
-     */
-    generateThumbnail(geometryType) {
-        // 检查缓存
-        if (this.cache.has(geometryType)) {
-            return this.cache.get(geometryType);
-        }
-
-        // 清除场景中的几何体
-        this.clearScene();
-
-        // 创建几何体
-        const geometry = this.createGeometry(geometryType);
-        if (!geometry) return null;
-
-        // 创建线框
-        const edges = new THREE.EdgesGeometry(geometry);
-        const lineMaterial = new THREE.LineBasicMaterial({
-            color: 0x1976d2,
-            linewidth: 2
-        });
-        const wireframe = new THREE.LineSegments(edges, lineMaterial);
-
-        // 创建半透明实体
-        const meshMaterial = new THREE.MeshPhongMaterial({
-            color: 0x1976d2,
-            transparent: true,
-            opacity: 0.15,
-            side: THREE.DoubleSide
-        });
-        const mesh = new THREE.Mesh(geometry, meshMaterial);
-
-        // 创建组
-        const group = new THREE.Group();
-        group.add(mesh);
-        group.add(wireframe);
-        this.scene.add(group);
-
-        // 渲染
-        this.renderer.render(this.scene, this.camera);
-
-        // 获取图片数据
-        const dataUrl = this.renderer.domElement.toDataURL('image/png');
-
-        // 缓存
-        this.cache.set(geometryType, dataUrl);
-
-        return dataUrl;
-    }
-
-    /**
-     * 创建几何体
-     */
-    createGeometry(type) {
-        switch (type) {
-            case 'cube':
-                return new THREE.BoxGeometry(1.5, 1.5, 1.5);
-
-            case 'rectangularBox':
-                return new THREE.BoxGeometry(2, 1.2, 1);
-
-            case 'cylinder':
-                return new THREE.CylinderGeometry(0.8, 0.8, 1.5, 16);
-
-            case 'cone':
-                return new THREE.ConeGeometry(0.8, 1.5, 16);
-
-            case 'sphere':
-                return new THREE.SphereGeometry(1, 16, 16);
-
-            case 'hexagonalPrism':
-                // 正三棱柱
-                return this.createTriangularPrism();
-
-            case 'squarePyramid':
-                // 正四棱锥
-                return new THREE.ConeGeometry(0.8, 1.5, 4);
-
-            case 'triangularPyramid':
-                // 正四面体
-                return new THREE.TetrahedronGeometry(1.2);
-
-            case 'triangularPrism':
-                // 三棱柱
-                return this.createTriangularPrism();
-
-            case 'frustum':
-                // 圆台
-                return new THREE.CylinderGeometry(0.8, 1.2, 1.5, 16);
-
-            case 'torus':
-                // 圆环
-                return new THREE.TorusGeometry(0.8, 0.3, 16, 32);
-
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * 创建三棱柱
-     */
-    createTriangularPrism() {
-        const shape = new THREE.Shape();
-        shape.moveTo(0, 0);
-        shape.lineTo(1.5, 0);
-        shape.lineTo(0.75, Math.sqrt(3) * 1.5 / 2);
-        shape.closePath();
-
-        const extrudeSettings = {
-            steps: 1,
-            depth: 1,
-            bevelEnabled: false
-        };
-
-        return new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    }
-
-    /**
-     * 清除场景
-     */
-    clearScene() {
-        while (this.scene.children.length > 2) { // 保留两个光源
-            const child = this.scene.children[2];
-            this.scene.remove(child);
-        }
-    }
-
-    /**
-     * 销毁渲染器
-     */
-    dispose() {
-        this.renderer.dispose();
-        this.cache.clear();
-    }
+/**
+ * 绘制正方体缩略图
+ */
+function drawCube(ctx, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const s = Math.min(w, h) * 0.3;
+  ctx.strokeStyle = '#6c8ebf';
+  ctx.lineWidth = 1.5;
+  // 前面
+  ctx.fillStyle = 'rgba(108,142,191,0.15)';
+  ctx.beginPath();
+  ctx.rect(cx - s, cy - s, s * 2, s * 2);
+  ctx.fill();
+  ctx.stroke();
+  // 上面
+  ctx.fillStyle = 'rgba(108,142,191,0.25)';
+  ctx.beginPath();
+  ctx.moveTo(cx - s, cy - s);
+  ctx.lineTo(cx - s + s * 0.5, cy - s - s * 0.5);
+  ctx.lineTo(cx + s + s * 0.5, cy - s - s * 0.5);
+  ctx.lineTo(cx + s, cy - s);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // 右面
+  ctx.fillStyle = 'rgba(108,142,191,0.2)';
+  ctx.beginPath();
+  ctx.moveTo(cx + s, cy - s);
+  ctx.lineTo(cx + s + s * 0.5, cy - s - s * 0.5);
+  ctx.lineTo(cx + s + s * 0.5, cy + s - s * 0.5);
+  ctx.lineTo(cx + s, cy + s);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 }
 
 /**
- * 为几何体选择器生成缩略图
+ * 绘制长方体缩略图
+ */
+function drawRectangularBox(ctx, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const sx = Math.min(w, h) * 0.35;
+  const sy = Math.min(w, h) * 0.25;
+  ctx.strokeStyle = '#6c8ebf';
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(108,142,191,0.15)';
+  ctx.beginPath();
+  ctx.rect(cx - sx, cy - sy, sx * 2, sy * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(108,142,191,0.25)';
+  ctx.beginPath();
+  ctx.moveTo(cx - sx, cy - sy);
+  ctx.lineTo(cx - sx + sx * 0.4, cy - sy - sy * 0.5);
+  ctx.lineTo(cx + sx + sx * 0.4, cy - sy - sy * 0.5);
+  ctx.lineTo(cx + sx, cy - sy);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(108,142,191,0.2)';
+  ctx.beginPath();
+  ctx.moveTo(cx + sx, cy - sy);
+  ctx.lineTo(cx + sx + sx * 0.4, cy - sy - sy * 0.5);
+  ctx.lineTo(cx + sx + sx * 0.4, cy + sy - sy * 0.5);
+  ctx.lineTo(cx + sx, cy + sy);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+/**
+ * 绘制三棱柱缩略图
+ */
+function drawTriangularPrism(ctx, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const s = Math.min(w, h) * 0.3;
+  ctx.strokeStyle = '#6c8ebf';
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(108,142,191,0.2)';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s);
+  ctx.lineTo(cx - s, cy + s * 0.7);
+  ctx.lineTo(cx + s, cy + s * 0.7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(108,142,191,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(cx + s, cy + s * 0.7);
+  ctx.lineTo(cx + s + s * 0.5, cy + s * 0.7 - s * 0.3);
+  ctx.lineTo(cx + s * 0.5, cy - s - s * 0.3);
+  ctx.lineTo(cx, cy - s);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+/**
+ * 绘制四面体缩略图
+ */
+function drawTetrahedron(ctx, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const s = Math.min(w, h) * 0.35;
+  ctx.strokeStyle = '#6c8ebf';
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(108,142,191,0.2)';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + s * 0.7);
+  ctx.lineTo(cx - s, cy + s);
+  ctx.lineTo(cx + s, cy + s);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(108,142,191,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s * 0.8);
+  ctx.lineTo(cx - s, cy + s);
+  ctx.lineTo(cx, cy + s * 0.7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s * 0.8);
+  ctx.lineTo(cx + s, cy + s);
+  ctx.lineTo(cx, cy + s * 0.7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+/**
+ * 绘制四棱锥缩略图
+ */
+function drawSquarePyramid(ctx, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const s = Math.min(w, h) * 0.3;
+  ctx.strokeStyle = '#6c8ebf';
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(108,142,191,0.2)';
+  ctx.beginPath();
+  ctx.rect(cx - s, cy + s * 0.3, s * 2, s * 1.2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(108,142,191,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s);
+  ctx.lineTo(cx - s, cy + s * 0.3);
+  ctx.lineTo(cx + s, cy + s * 0.3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+/**
+ * 绘制六棱柱缩略图
+ */
+function drawHexagonalPrism(ctx, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const r = Math.min(w, h) * 0.28;
+  ctx.strokeStyle = '#6c8ebf';
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(108,142,191,0.2)';
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 3) * i - Math.PI / 2;
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+/**
+ * 绘制圆柱缩略图
+ */
+function drawCylinder(ctx, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const rx = Math.min(w, h) * 0.3;
+  const ry = rx * 0.3;
+  const height = Math.min(w, h) * 0.5;
+  ctx.strokeStyle = '#6c8ebf';
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(108,142,191,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(cx - rx, cy - height / 2 + ry);
+  ctx.lineTo(cx - rx, cy + height / 2 - ry);
+  ctx.ellipse(cx, cy + height / 2 - ry, rx, ry, 0, Math.PI, 0, true);
+  ctx.lineTo(cx + rx, cy - height / 2 + ry);
+  ctx.ellipse(cx, cy - height / 2 + ry, rx, ry, 0, 0, Math.PI, true);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(108,142,191,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - height / 2 + ry, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+}
+
+/**
+ * 绘制圆锥缩略图
+ */
+function drawCone(ctx, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const rx = Math.min(w, h) * 0.35;
+  const ry = rx * 0.3;
+  const height = Math.min(w, h) * 0.5;
+  ctx.strokeStyle = '#6c8ebf';
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(108,142,191,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + height / 2 - ry, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(108,142,191,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - height / 2);
+  ctx.lineTo(cx - rx, cy + height / 2 - ry);
+  ctx.ellipse(cx, cy + height / 2 - ry, rx, ry, 0, Math.PI, 0, true);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+/**
+ * 绘制球体缩略图
+ */
+function drawSphere(ctx, w, h) {
+  const cx = w / 2, cy = h / 2;
+  const r = Math.min(w, h) * 0.35;
+  ctx.strokeStyle = '#6c8ebf';
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(108,142,191,0.15)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, r, r * 0.3, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, r * 0.3, r, 0, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+/**
+ * 缩略图绘制函数映射
+ */
+const DRAW_FUNCTIONS = {
+  cube: drawCube,
+  rectangularBox: drawRectangularBox,
+  triangularPrism: drawTriangularPrism,
+  tetrahedron: drawTetrahedron,
+  squarePyramid: drawSquarePyramid,
+  hexagonalPrism: drawHexagonalPrism,
+  triangularPyramid: drawTetrahedron,
+  cylinder: drawCylinder,
+  cone: drawCone,
+  sphere: drawSphere
+};
+
+/**
+ * 为所有几何体卡片生成缩略图
  */
 export function generateGeometryThumbnails() {
-    const generator = new ThumbnailGenerator();
+  document.querySelectorAll('.geometry-card').forEach(card => {
+    const type = card.dataset.type;
+    const thumbnailEl = card.querySelector('.geometry-thumbnail');
+    if (!type || !thumbnailEl) return;
 
-    // 获取所有几何体卡片
-    const cards = document.querySelectorAll('.geometry-card');
+    const canvas = document.createElement('canvas');
+    canvas.width = 80;
+    canvas.height = 80;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 80, 80);
 
-    cards.forEach(card => {
-        const type = card.dataset.type;
-        if (!type) return;
+    const drawFn = DRAW_FUNCTIONS[type];
+    if (drawFn) {
+      drawFn(ctx, 80, 80);
+    }
 
-        // 生成缩略图
-        const thumbnail = generator.generateThumbnail(type);
-        if (!thumbnail) return;
-
-        // 创建图片元素
-        const img = document.createElement('img');
-        img.src = thumbnail;
-        img.alt = type;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'contain';
-
-        // 添加到卡片的缩略图区域
-        const thumbnailContainer = card.querySelector('.geometry-thumbnail');
-        if (thumbnailContainer) {
-            thumbnailContainer.innerHTML = '';
-            thumbnailContainer.appendChild(img);
-        }
-    });
-
-    // 清理
-    generator.dispose();
+    thumbnailEl.style.backgroundImage = `url(${canvas.toDataURL()})`;
+    thumbnailEl.style.backgroundSize = 'contain';
+    thumbnailEl.style.backgroundRepeat = 'no-repeat';
+    thumbnailEl.style.backgroundPosition = 'center';
+  });
 }

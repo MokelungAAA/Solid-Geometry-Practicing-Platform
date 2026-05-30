@@ -11,7 +11,8 @@ export class KeyboardManager {
   }
 
   init() {
-    document.addEventListener('keydown', (e) => this.handleKeydown(e));
+    this._boundHandleKeydown = (e) => this.handleKeydown(e);
+    document.addEventListener('keydown', this._boundHandleKeydown);
   }
 
   register(key, callback, description = '') {
@@ -124,7 +125,10 @@ export class KeyboardManager {
   }
 
   dispose() {
-    document.removeEventListener('keydown', this.handleKeydown);
+    if (this._boundHandleKeydown) {
+      document.removeEventListener('keydown', this._boundHandleKeydown);
+      this._boundHandleKeydown = null;
+    }
     this.shortcuts = {};
   }
 }
