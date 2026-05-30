@@ -219,13 +219,46 @@ class SolidGeometryApp {
             thumbnail.className = 'geometry-thumbnail';
             thumbnail.id = `thumbnail-${type}`;
 
-            // 创建名称
+            // 创建信息区
+            const info = document.createElement('div');
+            info.className = 'geometry-card-info';
+
             const name = document.createElement('div');
             name.className = 'geometry-card-name';
             name.textContent = GEOMETRY_NAMES[type] || type;
 
+            const detail = document.createElement('div');
+            detail.className = 'geometry-card-detail';
+            const vertexCount = config.vertices ? Object.keys(config.vertices).length : 0;
+            const edgeCount = config.edges ? config.edges.length : 0;
+            const faceCount = config.faces ? Object.keys(config.faces).length : 0;
+            detail.textContent = `${vertexCount}顶点 · ${edgeCount}棱 · ${faceCount}面`;
+
+            info.appendChild(name);
+            info.appendChild(detail);
+
+            // 展开图标
+            const expandIcon = document.createElement('div');
+            expandIcon.className = 'geometry-card-expand-icon';
+            expandIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>`;
+
             card.appendChild(thumbnail);
-            card.appendChild(name);
+            card.appendChild(info);
+            card.appendChild(expandIcon);
+
+            // 点击展开/收起
+            card.addEventListener('click', (e) => {
+                // 如果点击的是展开图标或已展开状态，切换展开
+                if (card.classList.contains('expanded') || e.target.closest('.geometry-card-expand-icon')) {
+                    card.classList.toggle('expanded');
+                    // 更新展开详情
+                    this.updateCardDetail(card, type, card.classList.contains('expanded'));
+                } else {
+                    // 选择几何体
+                    this.createGeometry(type);
+                }
+            });
+
             selector.appendChild(card);
         });
 
@@ -242,6 +275,30 @@ class SolidGeometryApp {
         document.querySelectorAll('.geometry-card').forEach(card => {
             card.classList.toggle('active', card.dataset.type === activeType);
         });
+    }
+
+    /**
+     * 更新卡片展开详情
+     */
+    updateCardDetail(card, type, expanded) {
+        let detailEl = card.querySelector('.geometry-card-detail');
+        if (!detailEl) return;
+
+        const config = GEOMETRY_CONFIGS[type];
+        if (!config) return;
+
+        if (expanded) {
+            const vertexCount = config.vertices ? Object.keys(config.vertices).length : 0;
+            const edgeCount = config.edges ? config.edges.length : 0;
+            const faceCount = config.faces ? Object.keys(config.faces).length : 0;
+            const surfaceArea = config.type === 'curved' ? '含曲面' : `${faceCount}个平面`;
+            detailEl.textContent = `${vertexCount}顶点 · ${edgeCount}棱 · ${faceCount}面 · ${surfaceArea}`;
+        } else {
+            const vertexCount = config.vertices ? Object.keys(config.vertices).length : 0;
+            const edgeCount = config.edges ? config.edges.length : 0;
+            const faceCount = config.faces ? Object.keys(config.faces).length : 0;
+            detailEl.textContent = `${vertexCount}顶点 · ${edgeCount}棱 · ${faceCount}面`;
+        }
     }
 
     /**
@@ -361,6 +418,24 @@ class SolidGeometryApp {
             this.importRecords(e);
         });
 
+        // Issue 12: 设置按钮
+        const settingsBtn = document.getElementById('btn-settings');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => this.showSettings());
+        }
+
+        // Issue 4: 编辑按钮
+        const editBtn = document.getElementById('btn-edit');
+        if (editBtn) {
+            editBtn.addEventListener('click', () => this.showEditDialog());
+        }
+
+        // Issue 6: 随机生成按钮
+        const randomBtn = document.getElementById('btn-random');
+        if (randomBtn) {
+            randomBtn.addEventListener('click', () => this.randomGeometry());
+        }
+
         // 窗口大小变化
         window.addEventListener('resize', () => this.onWindowResize());
     }
@@ -401,8 +476,9 @@ class SolidGeometryApp {
      * 创建几何体
      */
     createGeometry(type) {
-        // 移除旧几何体
+        // 移除旧几何体（递归释放资源防止残留渲染）
         if (this.geometryGroup) {
+            this.disposeGroup(this.geometryGroup);
             this.scene.remove(this.geometryGroup);
         }
 
@@ -498,6 +574,24 @@ class SolidGeometryApp {
         this.geometryGroup.traverse(child => {
             if (child.isMesh && !child.material.wireframe) {
                 child.material.opacity = value;
+            }
+        });
+    }
+
+    /**
+     * 递归释放Three.js Group内的所有资源
+     */
+    disposeGroup(group) {
+        group.traverse(child => {
+            if (child.geometry) {
+                child.geometry.dispose();
+            }
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material.dispose();
+                }
             }
         });
     }
@@ -1117,6 +1211,493 @@ class SolidGeometryApp {
         if (this.toastManager) {
             this.toastManager.show(message, type);
         }
+    }
+
+    // ========================================
+    // Issue 12: 设置功能
+    // ========================================
+    showSettings() {
+        // 移除已有设置面板
+        const existing = document.querySelector('.settings-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'settings-overlay';
+        overlay.innerHTML = `
+            <div class="settings-panel">
+                <div class="settings-header">
+                    <h3>⚙️ 设置</h3>
+                    <button class="btn btn-ghost btn-icon btn-sm" id="close-settings">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="settings-body">
+                    <div class="settings-group">
+                        <div class="settings-group-title">显示</div>
+                        <div class="settings-item">
+                            <div>
+                                <div class="settings-item-label">网格</div>
+                                <div class="settings-item-desc">显示/隐藏地面网格</div>
+                            </div>
+                            <div class="switch ${this.sceneManager?.gridVisible ? 'active' : ''}" id="setting-grid"></div>
+                        </div>
+                        <div class="settings-item">
+                            <div>
+                                <div class="settings-item-label">坐标轴</div>
+                                <div class="settings-item-desc">显示/隐藏XYZ坐标轴</div>
+                            </div>
+                            <div class="switch ${this.sceneManager?.axesVisible ? 'active' : ''}" id="setting-axes"></div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-group-title">几何体</div>
+                        <div class="settings-item">
+                            <div>
+                                <div class="settings-item-label">透明度</div>
+                                <div class="settings-item-desc">调整面的透明程度</div>
+                            </div>
+                            <input type="range" class="slider" id="setting-opacity" min="0" max="1" step="0.05" value="0.6" style="width:120px">
+                        </div>
+                        <div class="settings-item">
+                            <div>
+                                <div class="settings-item-label">显示标签</div>
+                                <div class="settings-item-desc">顶点名称标签</div>
+                            </div>
+                            <div class="switch active" id="setting-labels"></div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-group-title">练习</div>
+                        <div class="settings-item">
+                            <div>
+                                <div class="settings-item-label">默认题数</div>
+                                <div class="settings-item-desc">每次练习的题目数量</div>
+                            </div>
+                            <select class="select" id="setting-default-count" style="width:80px">
+                                <option value="3">3题</option>
+                                <option value="5" selected>5题</option>
+                                <option value="10">10题</option>
+                                <option value="15">15题</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-group-title">关于</div>
+                        <div class="settings-item">
+                            <div>
+                                <div class="settings-item-label">立体几何练习平台</div>
+                                <div class="settings-item-desc">版本 1.0 · 基于 Three.js</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // 事件绑定
+        overlay.querySelector('#close-settings').addEventListener('click', () => overlay.remove());
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+        overlay.querySelector('#setting-grid')?.addEventListener('click', (e) => {
+            this.sceneManager.toggleGrid();
+            e.currentTarget.classList.toggle('active');
+        });
+        overlay.querySelector('#setting-axes')?.addEventListener('click', (e) => {
+            this.sceneManager.toggleAxes();
+            e.currentTarget.classList.toggle('active');
+        });
+        overlay.querySelector('#setting-opacity')?.addEventListener('input', (e) => {
+            this.setOpacity(parseFloat(e.target.value));
+        });
+        overlay.querySelector('#setting-labels')?.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('active');
+            const visible = e.currentTarget.classList.contains('active');
+            if (this.geometryGroup) {
+                this.geometryGroup.traverse(child => {
+                    if (child.isCSS2DObject || child.userData?.isLabel) {
+                        child.visible = visible;
+                    }
+                });
+            }
+        });
+    }
+
+    // ========================================
+    // Issue 6: 随机生成几何体
+    // ========================================
+    randomGeometry() {
+        const types = Object.keys(GEOMETRY_CONFIGS);
+        // 避免与当前类型重复
+        let available = types.filter(t => t !== this.currentGeometryType);
+        if (available.length === 0) available = types;
+        const randomType = available[Math.floor(Math.random() * available.length)];
+        this.createGeometry(randomType);
+        this.showToast(`🎲 随机：${GEOMETRY_NAMES[randomType] || randomType}`, 'info');
+    }
+
+    // ========================================
+    // Issue 4: 编辑功能
+    // ========================================
+    showEditDialog() {
+        if (!this.currentGeometryType) {
+            this.showToast('请先选择一个几何体', 'warning');
+            return;
+        }
+
+        const config = GEOMETRY_CONFIGS[this.currentGeometryType];
+        const name = GEOMETRY_NAMES[this.currentGeometryType] || this.currentGeometryType;
+
+        const existing = document.querySelector('.settings-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'settings-overlay';
+        overlay.innerHTML = `
+            <div class="settings-panel">
+                <div class="settings-header">
+                    <h3>✏️ 编辑 · ${name}</h3>
+                    <button class="btn btn-ghost btn-icon btn-sm" id="close-edit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="settings-body">
+                    <div class="settings-group">
+                        <div class="settings-group-title">显示控制</div>
+                        <div class="settings-item">
+                            <div class="settings-item-label">显示面</div>
+                            <div class="switch active" id="edit-faces"></div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-item-label">显示边</div>
+                            <div class="switch active" id="edit-edges"></div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-item-label">显示顶点</div>
+                            <div class="switch active" id="edit-vertices"></div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-item-label">显示标签</div>
+                            <div class="switch active" id="edit-labels"></div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-group-title">颜色</div>
+                        <div class="settings-item">
+                            <div class="settings-item-label">面颜色</div>
+                            <input type="color" id="edit-face-color" value="#6c8ebf" style="width:40px;height:30px;border:none;cursor:pointer">
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-item-label">边颜色</div>
+                            <input type="color" id="edit-edge-color" value="#dfd0b7" style="width:40px;height:30px;border:none;cursor:pointer">
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-group-title">几何体信息</div>
+                        <div style="font-size:13px;color:var(--md-on-surface-variant);line-height:1.8">
+                            <div>顶点数：${config.vertices ? Object.keys(config.vertices).length : '-'}</div>
+                            <div>棱数：${config.edges ? config.edges.length : '-'}</div>
+                            <div>面数：${config.faces ? Object.keys(config.faces).length : '-'}</div>
+                            <div>类型：${config.type === 'curved' ? '曲面' : '多面体'}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // 事件绑定
+        overlay.querySelector('#close-edit').addEventListener('click', () => overlay.remove());
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+        // 显示/隐藏控制
+        const toggleChild = (name, visible) => {
+            if (!this.geometryGroup) return;
+            this.geometryGroup.children.forEach(child => {
+                if (child.name === name || (name === 'labels' && (child.isCSS2DObject || child.userData?.isLabel))) {
+                    child.visible = visible;
+                }
+            });
+        };
+
+        overlay.querySelector('#edit-faces')?.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('active');
+            toggleChild('faces', e.currentTarget.classList.contains('active'));
+        });
+        overlay.querySelector('#edit-edges')?.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('active');
+            toggleChild('edges', e.currentTarget.classList.contains('active'));
+        });
+        overlay.querySelector('#edit-vertices')?.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('active');
+            toggleChild('vertices', e.currentTarget.classList.contains('active'));
+        });
+        overlay.querySelector('#edit-labels')?.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('active');
+            toggleChild('labels', e.currentTarget.classList.contains('active'));
+        });
+
+        // 颜色控制
+        overlay.querySelector('#edit-face-color')?.addEventListener('input', (e) => {
+            if (!this.geometryGroup) return;
+            this.geometryGroup.traverse(child => {
+                if (child.isMesh && !child.material.wireframe) {
+                    child.material.color.set(e.target.value);
+                }
+            });
+        });
+        overlay.querySelector('#edit-edge-color')?.addEventListener('input', (e) => {
+            if (!this.geometryGroup) return;
+            this.geometryGroup.traverse(child => {
+                if (child.isLineSegments) {
+                    child.material.color.set(e.target.value);
+                }
+            });
+        });
+    }
+
+    // ========================================
+    // Issue 9: 增强提示系统
+    // ========================================
+    showHint(questionIndex) {
+        const question = this.practiceManager.questions[questionIndex];
+        if (!question) return;
+
+        // 多级提示系统
+        const hints = this.generateMultiHints(question);
+        this.showHintPanel(questionIndex, hints);
+    }
+
+    generateMultiHints(question) {
+        const hints = [];
+
+        // 第一级：概念提示
+        if (question.type === 'calculation') {
+            hints.push({
+                level: '💡 概念',
+                text: question.hint || '回忆相关公式和定理'
+            });
+            // 第二级：思路提示
+            hints.push({
+                level: '🔍 思路',
+                text: `本题考查${this.getQuestionTypeName(question.type)}能力，注意审题中的关键条件。`
+            });
+        } else if (question.type === 'choice') {
+            hints.push({
+                level: '💡 概念',
+                text: question.hint || '仔细分析每个选项'
+            });
+            hints.push({
+                level: '🔍 排除',
+                text: '尝试排除明显错误的选项，缩小范围。'
+            });
+        } else if (question.type === 'proof') {
+            hints.push({
+                level: '💡 概念',
+                text: question.hint || '明确已知条件和求证目标'
+            });
+            hints.push({
+                level: '🔍 思路',
+                text: '从已知条件出发，逐步推导到结论。常用方法：综合法、分析法、反证法。'
+            });
+            hints.push({
+                level: '📝 格式',
+                text: '证明格式：已知→求证→证明过程（每步标注理由）'
+            });
+        } else {
+            hints.push({
+                level: '💡 提示',
+                text: question.hint || '仔细审题，注意关键条件'
+            });
+        }
+
+        return hints;
+    }
+
+    showHintPanel(questionIndex, hints) {
+        const existing = document.querySelector('.settings-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'settings-overlay';
+        overlay.innerHTML = `
+            <div class="settings-panel">
+                <div class="settings-header">
+                    <h3>💡 提示 · 第${questionIndex + 1}题</h3>
+                    <button class="btn btn-ghost btn-icon btn-sm" id="close-hint">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="settings-body">
+                    ${hints.map((h, i) => `
+                        <div class="settings-group" style="opacity:${1 - i * 0.15}">
+                            <div class="settings-group-title">${h.level}</div>
+                            <div style="font-size:14px;color:var(--md-on-surface);line-height:1.8;padding:8px 0">${h.text}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+        overlay.querySelector('#close-hint').addEventListener('click', () => overlay.remove());
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    }
+
+    // ========================================
+    // Issue 10: 证明题模板
+    // ========================================
+    createProofToolbar(questionIndex) {
+        const symbols = [
+            { label: '∵', insert: '∵ ' },
+            { label: '∴', insert: '∴ ' },
+            { label: '∠', insert: '∠' },
+            { label: '△', insert: '△' },
+            { label: '∥', insert: '∥' },
+            { label: '⊥', insert: '⊥' },
+            { label: '≡', insert: '≡' },
+            { label: '≈', insert: '≈' },
+            { label: '≠', insert: '≠' },
+            { label: '≤', insert: '≤' },
+            { label: '≥', insert: '≥' },
+            { label: '°', insert: '°' },
+            { label: 'π', insert: 'π' },
+            { label: '→', insert: '→' },
+            { label: '⇒', insert: '⇒' },
+            { label: '∈', insert: '∈' },
+            { label: '⊂', insert: '⊂' },
+            { label: '∪', insert: '∪' },
+            { label: '∩', insert: '∩' },
+            { label: '▱', insert: '▱' },
+            { label: '⊙', insert: '⊙' },
+            { label: '全等', insert: '≅' },
+            { label: '相似', insert: '∽' },
+            { label: '根号', insert: '√' },
+            { label: '平方', insert: '²' },
+            { label: '已知', insert: '已知：' },
+            { label: '求证', insert: '求证：' },
+            { label: '证明', insert: '证明：' },
+        ];
+
+        return `
+            <div class="proof-toolbar">
+                ${symbols.map(s => `<button class="proof-symbol-btn" data-insert="${s.insert}" data-target="proof-${questionIndex}">${s.label}</button>`).join('')}
+            </div>
+            <textarea class="proof-textarea" id="proof-${questionIndex}" placeholder="在此书写证明过程...&#10;&#10;提示：点击上方符号可快速插入数学符号"></textarea>
+        `;
+    }
+
+    bindProofToolbarEvents() {
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('proof-symbol-btn')) {
+                const insert = e.target.dataset.insert;
+                const targetId = e.target.dataset.target;
+                const textarea = document.getElementById(targetId);
+                if (textarea) {
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const text = textarea.value;
+                    textarea.value = text.substring(0, start) + insert + text.substring(end);
+                    textarea.selectionStart = textarea.selectionEnd = start + insert.length;
+                    textarea.focus();
+                }
+            }
+        });
+    }
+
+    // ========================================
+    // Issue 11: Fisher-Yates 洗牌算法
+    // ========================================
+    fisherYatesShuffle(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    // ========================================
+    // Issue 2: 练习模式改进
+    // ========================================
+    startPractice() {
+        const mode = document.getElementById('practice-mode')?.value || 'current';
+        const count = parseInt(document.getElementById('question-count')?.value || '5');
+        const difficulty = document.getElementById('difficulty-level')?.value || 'mixed';
+
+        // 确定几何体类型
+        let geometryType = this.currentGeometryType;
+        if (mode === 'random') {
+            const types = Object.keys(GEOMETRY_CONFIGS);
+            geometryType = types[Math.floor(Math.random() * types.length)];
+        }
+
+        // 生成题目（使用 Fisher-Yates 洗牌）
+        const questions = this.practiceManager.generateQuestions(geometryType, count, difficulty);
+        const shuffled = this.fisherYatesShuffle(questions);
+        this.practiceManager.questions = shuffled;
+
+        // 收起左侧面板，全宽显示题目
+        const practiceTab = document.getElementById('tab-practice');
+        if (practiceTab) practiceTab.classList.add('practice-active');
+
+        // 更新UI
+        this.updatePracticeUI(shuffled);
+
+        // 开始计时
+        this.practiceManager.startTimer();
+
+        this.showToast('📝 练习开始！', 'success');
+    }
+
+    // ========================================
+    // 更新练习UI（支持证明题模板）
+    // ========================================
+    updatePracticeUI(questions) {
+        const container = document.getElementById('question-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        questions.forEach((question, index) => {
+            const questionEl = document.createElement('div');
+            questionEl.className = 'question-item';
+
+            let answerHTML;
+            if (question.options) {
+                answerHTML = this.createOptionsHTML(question.options, index);
+            } else if (question.type === 'proof') {
+                answerHTML = this.createProofToolbar(index);
+            } else {
+                answerHTML = this.createInputHTML(index);
+            }
+
+            questionEl.innerHTML = `
+                <div class="question-header">
+                    <span class="question-number">第 ${index + 1} 题</span>
+                    <span class="question-type">${this.getQuestionTypeName(question.type)}</span>
+                    <span class="question-difficulty ${question.difficulty}">${this.getDifficultyName(question.difficulty)}</span>
+                </div>
+                <div class="question-text">${question.question}</div>
+                ${answerHTML}
+                <div class="question-actions">
+                    <button class="btn btn-sm btn-primary" onclick="app.submitAnswer(${index})">提交答案</button>
+                    <button class="btn btn-sm btn-outline" onclick="app.showHint(${index})">💡 提示</button>
+                </div>
+            `;
+            container.appendChild(questionEl);
+        });
+
+        this.bindProofToolbarEvents();
+        this.updatePracticeStats();
     }
 }
 

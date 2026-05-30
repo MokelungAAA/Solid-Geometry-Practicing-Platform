@@ -119,8 +119,10 @@ html, body {
 .left-panel {
     width: 320px;
     min-width: 280px;
-    background: var(--md-surface);
-    border-right: 1px solid var(--md-outline);
+    background: var(--md-backdrop-bg);
+    backdrop-filter: var(--md-backdrop);
+    -webkit-backdrop-filter: var(--md-backdrop);
+    border-right: 1px solid rgba(255, 255, 255, 0.18);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -169,10 +171,13 @@ html, body {
     left: var(--md-spacing-lg);
     background: var(--md-backdrop-bg);
     backdrop-filter: var(--md-backdrop);
+    -webkit-backdrop-filter: var(--md-backdrop);
     border-radius: var(--md-radius-md);
     padding: var(--md-spacing-md);
     box-shadow: var(--md-shadow-2);
     min-width: 200px;
+    z-index: 5;
+    border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .info-card-header {
@@ -579,41 +584,58 @@ html, body {
 }
 
 
-/* ========== 练习总结样式 ========== */
-.practice-summary-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-    animation: fadeIn var(--md-duration-normal) var(--md-easing-standard);
+/* ========== 练习总结样式（见 material-you.css） ========== */
+
+/* 练习模式：收起左侧面板，题目全宽显示 */
+.tab-content.active.practice-active .left-panel {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    border: none;
+    padding: 0;
 }
 
-.practice-summary {
-    background: var(--md-surface);
-    border-radius: var(--md-radius-xl);
-    padding: var(--md-spacing-xl);
-    max-width: 400px;
-    width: 90%;
-    text-align: center;
-    box-shadow: var(--md-shadow-4);
+.tab-content.active.practice-active .scene-container {
+    width: 100%;
 }
 
-.practice-summary h3 {
-    margin: 0 0 var(--md-spacing-lg) 0;
-    color: var(--md-primary);
-    font-size: var(--md-font-size-xl);
+.tab-content.active.practice-active .scene-container .split-view {
+    flex-direction: column;
 }
 
-.summary-stats p {
-    margin: var(--md-spacing-sm) 0;
+.tab-content.active.practice-active .scene-container .canvas-section {
+    height: 40vh;
+    min-height: 250px;
+}
+
+.tab-content.active.practice-active .scene-container .questions-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--md-spacing-lg);
+}
+
+/* 练习开始按钮 */
+.btn-start-practice {
+    width: 100%;
+    padding: var(--md-spacing-md) var(--md-spacing-xl);
     font-size: var(--md-font-size-md);
-    color: var(--md-on-surface);
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--md-primary), var(--md-primary-dark));
+    color: white;
+    border: none;
+    border-radius: var(--md-radius-md);
+    cursor: pointer;
+    transition: all var(--md-duration-fast) var(--md-easing-standard);
+    box-shadow: var(--md-shadow-2);
+}
+
+.btn-start-practice:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--md-shadow-3);
+}
+
+.btn-start-practice:active {
+    transform: translateY(0);
 }
 
 @keyframes fadeIn {
@@ -621,47 +643,47 @@ html, body {
     to { opacity: 1; }
 }
 
-/* ===== 几何体选择器卡片 ===== */
+/* ===== 几何体选择器（菜单栏形式） ===== */
 #geometry-selector {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-    gap: var(--md-spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     padding: var(--md-spacing-sm);
 }
 
 .geometry-card {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: var(--md-spacing-xs);
-    padding: var(--md-spacing-sm);
-    background: var(--md-surface);
-    border: 2px solid transparent;
-    border-radius: var(--md-radius-lg);
+    gap: var(--md-spacing-md);
+    padding: 10px var(--md-spacing-md);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--md-radius-sm);
     cursor: pointer;
     transition: all var(--md-duration-fast) var(--md-easing-standard);
+    width: 100%;
+    text-align: left;
 }
 
 .geometry-card:hover {
     background: var(--md-surface-container);
-    transform: translateY(-2px);
-    box-shadow: var(--md-shadow-1);
 }
 
 .geometry-card.active {
-    border-color: var(--md-primary);
     background: var(--md-primary-container);
+    border-color: var(--md-primary);
 }
 
 .geometry-thumbnail {
-    width: 60px;
-    height: 60px;
+    width: 36px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--md-surface-container-low);
-    border-radius: var(--md-radius-md);
+    border-radius: var(--md-radius-xs);
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .geometry-thumbnail img {
@@ -670,11 +692,45 @@ html, body {
     object-fit: contain;
 }
 
+.geometry-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
 .geometry-card-name {
-    font-size: var(--md-font-size-xs);
+    font-size: var(--md-font-size-sm);
+    font-weight: 500;
     color: var(--md-on-surface);
-    text-align: center;
-    line-height: 1.2;
+    line-height: 1.3;
+}
+
+.geometry-card-detail {
+    font-size: var(--md-font-size-xs);
+    color: var(--md-on-surface-variant);
+    margin-top: 2px;
+}
+
+.geometry-card-expand-icon {
+    font-size: 10px;
+    color: var(--md-on-surface-variant);
+    transition: transform var(--md-duration-fast) var(--md-easing-standard);
+    flex-shrink: 0;
+}
+
+.geometry-card.expanded .geometry-card-expand-icon {
+    transform: rotate(90deg);
+}
+
+.geometry-card-expanded {
+    display: none;
+    padding: var(--md-spacing-sm) var(--md-spacing-md) var(--md-spacing-md) 52px;
+    font-size: var(--md-font-size-xs);
+    color: var(--md-on-surface-variant);
+    line-height: 1.6;
+}
+
+.geometry-card.expanded ~ .geometry-card-expanded {
+    display: block;
 }
 
 /* ===== 统计图表 ===== */
