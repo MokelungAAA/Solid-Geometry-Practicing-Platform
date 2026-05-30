@@ -1,208 +1,242 @@
 /**
- * 练习模式管理器
- * 负责出题、答题、评分等功能
+ * PracticeManager
+ * 练习系统管理器
  */
 
-import { QuestionGenerator } from './questionBank.js';
+import { GEOMETRY_CONFIGS, GEOMETRY_TYPES } from '../utils/constants.js';
 
 export class PracticeManager {
-    constructor() {
-        this.questions = [];
-        this.currentIndex = 0;
-        this.correctCount = 0;
-        this.startTime = null;
-        this.endTime = null;
+  constructor() {
+    this.isPracticing = false;
+    this.isPaused = false;
+    this.currentQuestion = null;
+    this.questions = [];
+    this.currentIndex = 0;
+    this.score = { correct: 0, total: 0 };
+    this.startTime = null;
+    this.mode = 'current';
+    this.difficulty = 'medium';
+    this.questionCount = 10;
+  }
 
-        // 题目类型
-        this.questionTypes = ['fill', 'choice', 'proof', 'calculation'];
+  startPractice(options = {}) {
+    this.mode = options.mode || 'current';
+    this.difficulty = options.difficulty || 'medium';
+    this.questionCount = options.questionCount || 10;
+    this.currentIndex = 0;
+    this.score = { correct: 0, total: 0 };
+    this.startTime = Date.now();
+    this.isPracticing = true;
+    this.isPaused = false;
+    this.generateQuestions();
+    return this.questions.length > 0;
+  }
 
-        // 难度级别
-        this.difficulties = ['easy', 'medium', 'hard'];
+  stopPractice() {
+    this.isPracticing = false;
+    this.isPaused = false;
+    const duration = Date.now() - this.startTime;
+    return {
+      score: this.score,
+      duration,
+      totalQuestions: this.questions.length
+    };
+  }
 
-        // 题目生成器
-        this.questionGenerator = new QuestionGenerator();
+  pausePractice() {
+    if (this.isPracticing) {
+      this.isPaused = true;
     }
+  }
 
-    /**
-     * 生成题目
-     */
-    generateQuestions(geometryType, count = 5, difficulty = 'mixed') {
-        this.questions = [];
-        this.currentIndex = 0;
-        this.correctCount = 0;
+  resumePractice() {
+    if (this.isPracticing && this.isPaused) {
+      this.isPaused = false;
+    }
+  }
 
-        for (let i = 0; i < count; i++) {
-            const question = this.generateSingleQuestion(geometryType, difficulty);
-            this.questions.push(question);
+  generateQuestions() {
+    this.questions = [];
+    const types = this.mode === 'random'
+      ? Object.values(GEOMETRY_TYPES)
+      : [this.mode];
+    for (let i = 0; i < this.questionCount; i++) {
+      const type = types[Math.floor(Math.random() * types.length)];
+      const config = GEOMETRY_CONFIGS[type];
+      const question = this.generateQuestion(type, config);
+      this.questions.push(question);
+    }
+  }
+
+  generateQuestion(type, config) {
+    const questionTypes = ['volume', 'surfaceArea', 'vertices', 'edges', 'faces'];
+    const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+    const params = config.defaultParams;
+    let questionText = '';
+    let correctAnswer = '';
+    switch (questionType) {
+      case 'volume':
+        questionText = config.name + '的体积';
+        correctAnswer = this.calculateVolume(type, params).toFixed(2);
+        break;
+      case 'surfaceArea':
+        questionText = config.name + '的表面积';
+        correctAnswer = this.calculateSurfaceArea(type, params).toFixed(2);
+        break;
+      case 'vertices':
+        questionText = config.name + '有多少个顶点？';
+        correctAnswer = String(this.getVertices(type));
+        break;
+      case 'edges':
+        questionText = config.name + '有多少条棱？';
+        correctAnswer = String(this.getEdges(type));
+        break;
+      case 'faces':
+        questionText = config.name + '有多少个面？';
+        correctAnswer = String(this.getFaces(type));
+        break;
+    }
+    return {
+      type: questionType,
+      geometryType: type,
+      questionText,
+      correctAnswer,
+      options: this.generateOptions(correctAnswer, questionType)
+    };
+  }
+
+  generateOptions(correctAnswer, questionType) {
+    const options = [correctAnswer];
+    const correct = parseFloat(correctAnswer);
+    if (questionType === 'volume' || questionType === 'surfaceArea') {
+      while (options.length < 4) {
+        const variation = correct * (0.5 + Math.random());
+        const option = variation.toFixed(2);
+        if (!options.includes(option)) {
+          options.push(option);
         }
-
-        return this.questions;
-    }
-
-    /**
-     * 生成单道题目
-     */
-    generateSingleQuestion(geometryType, difficulty) {
-        // 随机选择题目类型
-        const type = this.questionTypes[Math.floor(Math.random() * this.questionTypes.length)];
-
-        // 根据难度选择
-        let actualDifficulty = difficulty;
-        if (difficulty === 'mixed') {
-            const rand = Math.random();
-            if (rand < 0.4) actualDifficulty = 'easy';
-            else if (rand < 0.8) actualDifficulty = 'medium';
-            else actualDifficulty = 'hard';
+      }
+    } else {
+      while (options.length < 4) {
+        const variation = Math.floor(correct * (0.5 + Math.random()));
+        const option = String(variation);
+        if (!options.includes(option)) {
+          options.push(option);
         }
-
-        // 根据几何体类型和题目类型生成题目
-        const question = this.createQuestionByType(geometryType, type, actualDifficulty);
-
-        return {
-            id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            type: type,
-            difficulty: actualDifficulty,
-            geometryType: geometryType,
-            ...question,
-            userAnswer: null,
-            isCorrect: null,
-            timeSpent: 0
-        };
+      }
     }
+    return this.shuffleArray(options);
+  }
 
-    /**
-     * 根据类型创建题目
-     */
-    createQuestionByType(geometryType, type, difficulty) {
-        // 使用题库生成器生成题目
-        switch (type) {
-            case 'fill':
-                return this.questionGenerator.generateFillQuestion(geometryType, difficulty);
-            case 'choice':
-                return this.questionGenerator.generateChoiceQuestion(geometryType, difficulty);
-            case 'proof':
-                return this.questionGenerator.generateProofQuestion(geometryType, difficulty);
-            case 'calculation':
-                return this.questionGenerator.generateCalculationQuestion(geometryType, difficulty);
-            default:
-                return this.questionGenerator.generateFillQuestion(geometryType, difficulty);
-        }
+  shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
+    return shuffled;
+  }
 
-    /**
-     * 开始计时
-     */
-    startTimer() {
-        this.startTime = Date.now();
+  getCurrentQuestion() {
+    if (this.currentIndex < this.questions.length) {
+      return this.questions[this.currentIndex];
     }
+    return null;
+  }
 
-    /**
-     * 提交答案
-     */
-    submitAnswer(answer) {
-        if (this.currentIndex >= this.questions.length) return null;
-
-        const question = this.questions[this.currentIndex];
-        question.userAnswer = answer;
-        question.timeSpent = Date.now() - this.startTime;
-
-        // 判断答案是否正确
-        question.isCorrect = this.checkAnswer(question, answer);
-        if (question.isCorrect) {
-            this.correctCount++;
-        }
-
-        this.currentIndex++;
-
-        return {
-            isCorrect: question.isCorrect,
-            correctAnswer: question.answer,
-            solution: question.solution
-        };
+  submitAnswer(answer) {
+    const question = this.getCurrentQuestion();
+    if (!question) return null;
+    const isCorrect = answer === question.correctAnswer;
+    if (isCorrect) {
+      this.score.correct++;
     }
+    this.score.total++;
+    this.currentIndex++;
+    return {
+      isCorrect,
+      correctAnswer: question.correctAnswer,
+      score: this.score
+    };
+  }
 
-    /**
-     * 检查答案
-     */
-    checkAnswer(question, userAnswer) {
-        // 根据题目类型检查答案
-        switch (question.type) {
-            case 'fill':
-                return this.checkFillAnswer(question, userAnswer);
-            case 'choice':
-                return this.checkChoiceAnswer(question, userAnswer);
-            case 'proof':
-                return this.checkProofAnswer(question, userAnswer);
-            case 'calculation':
-                return this.checkCalculationAnswer(question, userAnswer);
-            default:
-                return false;
-        }
+  calculateVolume(type, params) {
+    switch (type) {
+      case 'cube': return Math.pow(params.a, 3);
+      case 'rectangularBox': return params.a * params.b * params.c;
+      case 'triangularPrism': return 0.5 * params.a * params.b * params.c;
+      case 'tetrahedron': return (Math.pow(params.a, 3) * Math.sqrt(2)) / 12;
+      case 'squarePyramid': return (params.a * params.a * params.h) / 3;
+      case 'hexagonalPrism': return (3 * Math.sqrt(3) * Math.pow(params.a, 2) * params.h) / 2;
+      case 'triangularPyramid': return (params.a * params.b * params.h) / 6;
+      case 'cylinder': return Math.PI * Math.pow(params.r, 2) * params.h;
+      case 'cone': return (Math.PI * Math.pow(params.r, 2) * params.h) / 3;
+      case 'sphere': return (4 * Math.PI * Math.pow(params.r, 3)) / 3;
+      default: return 0;
     }
+  }
 
-    /**
-     * 检查填空题答案
-     */
-    checkFillAnswer(question, userAnswer) {
-        // 简单的字符串比较，后续可以加入更智能的判断
-        return userAnswer.toString().trim() === question.answer.toString().trim();
+  calculateSurfaceArea(type, params) {
+    switch (type) {
+      case 'cube': return 6 * Math.pow(params.a, 2);
+      case 'rectangularBox': return 2 * (params.a * params.b + params.b * params.c + params.a * params.c);
+      case 'triangularPrism': return params.a * params.b + 2 * params.b * params.c + 2 * 0.5 * params.a * params.c;
+      case 'tetrahedron': return Math.sqrt(3) * Math.pow(params.a, 2);
+      case 'squarePyramid': return params.a * params.a + 2 * params.a * Math.sqrt(Math.pow(params.h, 2) + Math.pow(params.a / 2, 2));
+      case 'hexagonalPrism': return 6 * params.a * params.h + 3 * Math.sqrt(3) * Math.pow(params.a, 2);
+      case 'triangularPyramid': return 0.5 * params.a * params.b + 0.5 * params.a * params.h + 0.5 * params.b * params.h + 0.5 * params.a * Math.sqrt(Math.pow(params.h, 2) + Math.pow(params.b / 2, 2));
+      case 'cylinder': return 2 * Math.PI * params.r * params.h + 2 * Math.PI * Math.pow(params.r, 2);
+      case 'cone': return Math.PI * params.r * params.h + Math.PI * Math.pow(params.r, 2);
+      case 'sphere': return 4 * Math.PI * Math.pow(params.r, 2);
+      default: return 0;
     }
+  }
 
-    /**
-     * 检查选择题答案
-     */
-    checkChoiceAnswer(question, userAnswer) {
-        return parseInt(userAnswer) === question.answer;
-    }
+  getVertices(type) {
+    const vertices = {
+      cube: 8, rectangularBox: 8, triangularPrism: 6, tetrahedron: 4,
+      squarePyramid: 5, hexagonalPrism: 12, triangularPyramid: 4,
+      cylinder: 0, cone: 0, sphere: 0
+    };
+    return vertices[type] || 0;
+  }
 
-    /**
-     * 检查证明题答案
-     */
-    checkProofAnswer(question, userAnswer) {
-        // 证明题需要人工判断或更复杂的逻辑
-        // 这里暂时返回true，后续可以加入关键词匹配
-        return true;
-    }
+  getEdges(type) {
+    const edges = {
+      cube: 12, rectangularBox: 12, triangularPrism: 9, tetrahedron: 6,
+      squarePyramid: 8, hexagonalPrism: 18, triangularPyramid: 6,
+      cylinder: 0, cone: 0, sphere: 0
+    };
+    return edges[type] || 0;
+  }
 
-    /**
-     * 检查计算题答案
-     */
-    checkCalculationAnswer(question, userAnswer) {
-        // 计算题需要数值比较，允许一定的误差
-        const correct = parseFloat(question.answer);
-        const user = parseFloat(userAnswer);
-        return Math.abs(correct - user) < 0.01;
-    }
+  getFaces(type) {
+    const faces = {
+      cube: 6, rectangularBox: 6, triangularPrism: 5, tetrahedron: 4,
+      squarePyramid: 5, hexagonalPrism: 8, triangularPyramid: 4,
+      cylinder: 3, cone: 2, sphere: 1
+    };
+    return faces[type] || 0;
+  }
 
-    /**
-     * 获取当前题目
-     */
-    getCurrentQuestion() {
-        if (this.currentIndex >= this.questions.length) return null;
-        return this.questions[this.currentIndex];
-    }
+  getProgress() {
+    return {
+      current: this.currentIndex,
+      total: this.questions.length,
+      percentage: this.questions.length > 0
+        ? Math.round((this.currentIndex / this.questions.length) * 100)
+        : 0
+    };
+  }
 
-    /**
-     * 获取统计信息
-     */
-    getStats() {
-        return {
-            total: this.questions.length,
-            answered: this.currentIndex,
-            correct: this.correctCount,
-            accuracy: this.currentIndex > 0 ? (this.correctCount / this.currentIndex * 100).toFixed(1) : 0
-        };
-    }
-
-    /**
-     * 获取练习记录
-     */
-    getRecord() {
-        return {
-            date: new Date().toISOString(),
-            questions: this.questions,
-            stats: this.getStats(),
-            totalTime: this.endTime ? this.endTime - this.startTime : Date.now() - this.startTime
-        };
-    }
+  getStats() {
+    const duration = this.startTime ? Date.now() - this.startTime : 0;
+    return {
+      score: this.score,
+      duration,
+      accuracy: this.score.total > 0
+        ? Math.round((this.score.correct / this.score.total) * 100)
+        : 0
+    };
+  }
 }

@@ -1,6 +1,6 @@
 {
   "name": "solid-geometry-platform",
-  "version": "0.2.0",
+  "version": "0.0.1",
   "description": "高中立体几何交互练习平台",
   "type": "module",
   "scripts": {

@@ -1,171 +1,94 @@
-// ========================
-// 信息卡片管理器
-// ========================
-import { GEOMETRY_CONFIGS } from '../geometry/configs.js';
+/**
+ * InfoCardManager
+ * 几何体信息卡片管理器
+ */
+
+import { GEOMETRY_CONFIGS } from '../utils/constants.js';
+import { GEOMETRY_DETAILS } from '../geometry/configs.js';
 
 export class InfoCardManager {
-    constructor() {
-        this.elements = {};
-        this.init();
+  constructor() {
+    this.card = document.getElementById('info-card');
+    this.currentGeometry = null;
+  }
+
+  show(type, params) {
+    const config = GEOMETRY_CONFIGS[type];
+    const details = GEOMETRY_DETAILS[type];
+    
+    if (!config || !details) return;
+
+    this.currentGeometry = { type, params };
+    
+    // 计算属性
+    const volume = details.volume(params);
+    const surfaceArea = details.surfaceArea(params);
+    
+    // 构建卡片内容
+    this.card.innerHTML = `
+      <div class="info-card-header">
+        <h3 class="info-card-title">${config.name}</h3>
+        <button class="btn-icon btn-ghost" id="close-info-card">✕</button>
+      </div>
+      <div class="info-card-body">
+        <p class="info-card-description">${config.description}</p>
+        <div class="info-card-stats">
+          <div class="stat-item">
+            <span class="stat-value">${details.vertices === 0 ? '∞' : details.vertices}</span>
+            <span class="stat-label">顶点</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">${details.edges === 0 ? '∞' : details.edges}</span>
+            <span class="stat-label">棱</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">${details.faces}</span>
+            <span class="stat-label">面</span>
+          </div>
+        </div>
+        <div class="info-card-formulas">
+          <div class="formula-item">
+            <span class="formula-label">体积</span>
+            <span class="formula-value">${volume.toFixed(2)}</span>
+          </div>
+          <div class="formula-item">
+            <span class="formula-label">表面积</span>
+            <span class="formula-value">${surfaceArea.toFixed(2)}</span>
+          </div>
+        </div>
+        <div class="info-card-faces">
+          <h4>面的构成</h4>
+          <ul>
+            ${details.faceTypes.map(face => `<li>${face}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+    
+    // 显示卡片
+    this.card.style.display = 'block';
+    
+    // 绑定关闭按钮
+    const closeBtn = document.getElementById('close-info-card');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.hide());
     }
+  }
 
-    // ========================
-    // 初始化
-    // ========================
-    init() {
-        this.cacheElements();
+  hide() {
+    this.card.style.display = 'none';
+    this.currentGeometry = null;
+  }
+
+  toggle(type, params) {
+    if (this.currentGeometry && this.currentGeometry.type === type) {
+      this.hide();
+    } else {
+      this.show(type, params);
     }
+  }
 
-    // ========================
-    // 缓存DOM元素
-    // ========================
-    cacheElements() {
-        this.elements = {
-            geometryName: document.getElementById('geometryName'),
-            geometryDescription: document.getElementById('geometryDescription'),
-            faceCount: document.getElementById('faceCount'),
-            edgeCount: document.getElementById('edgeCount'),
-            vertexCount: document.getElementById('vertexCount'),
-            unfoldSteps: document.getElementById('unfoldSteps'),
-            geometryInfoCard: document.getElementById('geometryInfoCard')
-        };
-    }
-
-    // ========================
-    // 更新几何体信息
-    // ========================
-    updateGeometryInfo(geometryType) {
-        const config = GEOMETRY_CONFIGS[geometryType];
-        if (!config) return;
-
-        const stats = this.calculateStats(geometryType, config);
-
-        // 更新名称
-        if (this.elements.geometryName) {
-            this.elements.geometryName.textContent = stats.name;
-        }
-
-        // 更新描述
-        if (this.elements.geometryDescription) {
-            this.elements.geometryDescription.textContent = stats.description;
-        }
-
-        // 更新统计数据
-        if (this.elements.faceCount) {
-            this.elements.faceCount.textContent = stats.faceCount;
-        }
-        if (this.elements.edgeCount) {
-            this.elements.edgeCount.textContent = stats.edgeCount;
-        }
-        if (this.elements.vertexCount) {
-            this.elements.vertexCount.textContent = stats.vertexCount;
-        }
-        if (this.elements.unfoldSteps) {
-            this.elements.unfoldSteps.textContent = stats.unfoldSteps;
-        }
-    }
-
-    // ========================
-    // 计算统计数据
-    // ========================
-    calculateStats(geometryType, config) {
-        const stats = {
-            name: config.name || geometryType,
-            description: this.getDescription(geometryType),
-            faceCount: Object.keys(config.faces).length,
-            edgeCount: config.edges.length,
-            vertexCount: Object.keys(config.vertices).length,
-            unfoldSteps: this.calculateUnfoldSteps(config)
-        };
-
-        return stats;
-    }
-
-    // ========================
-    // 获取几何体描述
-    // ========================
-    getDescription(geometryType) {
-        const descriptions = {
-            cube: '六个完全相同的正方形面组成的正多面体',
-            triangularPrism: '两个平行的三角形底面和三个矩形侧面',
-            squarePyramid: '正方形底面和四个三角形侧面组成的棱锥',
-            tetrahedron: '四个全等的等边三角形面组成的正多面体',
-            rectangularBox: '六个矩形面组成的长方体',
-            hexagonalPrism: '两个平行的六边形底面和六个矩形侧面',
-            triangularPyramid: '三角形底面和三个三角形侧面组成的棱锥',
-            pentagonalPyramid: '五边形底面和五个三角形侧面组成的棱锥',
-            irregularBox: '不规则六面体',
-            truncatedPyramid: '棱锥被平行于底面的平面截断后的几何体',
-            octahedron: '八个全等的等边三角形面组成的正多面体'
-        };
-        return descriptions[geometryType] || '';
-    }
-
-    // ========================
-    // 计算展开步骤数
-    // ========================
-    calculateUnfoldSteps(config) {
-        if (!config.unfoldConfig || !config.unfoldConfig.pivots) {
-            return Object.keys(config.faces).length;
-        }
-        return Object.keys(config.unfoldConfig.pivots).length + 1;
-    }
-
-    // ========================
-    // 更新展开信息
-    // ========================
-    updateUnfoldInfo(progress, isPlaying) {
-        const unfoldInfo = document.getElementById('unfoldInfo');
-        if (unfoldInfo) {
-            const percent = Math.round(progress * 100);
-            unfoldInfo.textContent = `展开进度: ${percent}%`;
-        }
-    }
-
-    // ========================
-    // 更新截面信息
-    // ========================
-    updateSectionInfo(pointCount, hasSection) {
-        const sectionInfo = document.getElementById('sectionInfo');
-        if (sectionInfo) {
-            if (hasSection) {
-                sectionInfo.textContent = `已创建截面 (${pointCount}点)`;
-            } else if (pointCount > 0) {
-                sectionInfo.textContent = `已选择 ${pointCount} 个点`;
-            } else {
-                sectionInfo.textContent = '点击几何体表面放置截面点';
-            }
-        }
-    }
-
-    // ========================
-    // 显示/隐藏卡片
-    // ========================
-    show() {
-        if (this.elements.geometryInfoCard) {
-            this.elements.geometryInfoCard.style.display = 'block';
-        }
-    }
-
-    hide() {
-        if (this.elements.geometryInfoCard) {
-            this.elements.geometryInfoCard.style.display = 'none';
-        }
-    }
-
-    // ========================
-    // 高亮显示变化的数字
-    // ========================
-    animateValueChange(element, newValue) {
-        if (!element) return;
-
-        const oldValue = element.textContent;
-        if (oldValue !== String(newValue)) {
-            element.textContent = newValue;
-            element.classList.add('value-changed');
-            setTimeout(() => {
-                element.classList.remove('value-changed');
-            }, 300);
-        }
-    }
+  isVisible() {
+    return this.card.style.display !== 'none';
+  }
 }

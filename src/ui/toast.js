@@ -1,137 +1,143 @@
-// ========================
-// Toast通知管理器
-// ========================
+/**
+ * ToastManager
+ * 消息提示管理器
+ */
 
 export class ToastManager {
-    constructor() {
-        this.container = null;
-        this.toasts = [];
-        this.maxToasts = 3;
+  constructor() {
+    this.container = document.getElementById('toast-container');
+    this.toasts = [];
+    this.maxToasts = 3;
+  }
 
-        this.init();
+  show(message, type = 'info', duration = 3000) {
+    const toast = this.createToast(message, type);
+    this.container.appendChild(toast);
+    this.toasts.push(toast);
+
+    // 限制显示数量
+    if (this.toasts.length > this.maxToasts) {
+      this.remove(this.toasts[0]);
     }
 
-    // ========================
-    // 初始化
-    // ========================
-    init() {
-        this.createContainer();
+    // 自动消失
+    setTimeout(() => {
+      this.remove(toast);
+    }, duration);
+
+    return toast;
+  }
+
+  createToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <div class="toast-content">
+        <span class="toast-icon">${this.getIcon(type)}</span>
+        <span class="toast-message">${message}</span>
+      </div>
+    `;
+    
+    // 添加动画
+    toast.style.animation = 'toast-slide-in 0.3s ease-out';
+    
+    return toast;
+  }
+
+  getIcon(type) {
+    const icons = {
+      success: '✓',
+      error: '✕',
+      warning: '⚠',
+      info: 'ℹ'
+    };
+    return icons[type] || icons.info;
+  }
+
+  remove(toast) {
+    if (!toast || !toast.parentNode) return;
+    
+    toast.style.animation = 'toast-slide-out 0.3s ease-in';
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+      const index = this.toasts.indexOf(toast);
+      if (index > -1) {
+        this.toasts.splice(index, 1);
+      }
+    }, 300);
+  }
+
+  success(message, duration) {
+    return this.show(message, 'success', duration);
+  }
+
+  error(message, duration) {
+    return this.show(message, 'error', duration);
+  }
+
+  warning(message, duration) {
+    return this.show(message, 'warning', duration);
+  }
+
+  info(message, duration) {
+    return this.show(message, 'info', duration);
+  }
+
+  progress(message, progress = 0) {
+    const toast = this.createProgressToast(message, progress);
+    this.container.appendChild(toast);
+    this.toasts.push(toast);
+    return toast;
+  }
+
+  createProgressToast(message, progress) {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-progress';
+    toast.innerHTML = `
+      <div class="toast-content">
+        <span class="toast-message">${message}</span>
+        <div class="toast-progress-bar">
+          <div class="toast-progress-fill" style="width: ${progress}%"></div>
+        </div>
+        <span class="toast-progress-text">${progress}%</span>
+      </div>
+    `;
+    toast.style.animation = 'toast-slide-in 0.3s ease-out';
+    return toast;
+  }
+
+  updateProgress(toast, progress) {
+    if (!toast) return;
+    const fill = toast.querySelector('.toast-progress-fill');
+    const text = toast.querySelector('.toast-progress-text');
+    if (fill) fill.style.width = `${progress}%`;
+    if (text) text.textContent = `${progress}%`;
+    if (progress >= 100) {
+      setTimeout(() => this.remove(toast), 1000);
     }
+  }
 
-    // ========================
-    // 创建容器
-    // ========================
-    createContainer() {
-        this.container = document.createElement('div');
-        this.container.className = 'toast-container';
-        document.body.appendChild(this.container);
-    }
+  dismissAll() {
+    [...this.toasts].forEach(toast => this.remove(toast));
+  }
 
-    // ========================
-    // 显示Toast
-    // ========================
-    show(message, type = 'info', duration = 3000) {
-        const toast = this.createToast(message, type);
-        this.container.appendChild(toast);
-        this.toasts.push(toast);
+  setPosition(position) {
+    if (!this.container) return;
+    const positions = {
+      'top-right': { top: '20px', right: '20px', bottom: 'auto', left: 'auto' },
+      'top-left': { top: '20px', left: '20px', bottom: 'auto', right: 'auto' },
+      'bottom-right': { bottom: '20px', right: '20px', top: 'auto', left: 'auto' },
+      'bottom-left': { bottom: '20px', left: '20px', top: 'auto', right: 'auto' },
+      'top-center': { top: '20px', left: '50%', transform: 'translateX(-50%)', bottom: 'auto', right: 'auto' },
+      'bottom-center': { bottom: '20px', left: '50%', transform: 'translateX(-50%)', top: 'auto', right: 'auto' }
+    };
+    const pos = positions[position] || positions['top-right'];
+    Object.assign(this.container.style, pos);
+  }
 
-        // 触发动画
-        requestAnimationFrame(() => {
-            toast.classList.add('show');
-        });
-
-        // 自动移除
-        if (duration > 0) {
-            setTimeout(() => {
-                this.hide(toast);
-            }, duration);
-        }
-
-        // 限制最大数量
-        this.limitToasts();
-
-        return toast;
-    }
-
-    // ========================
-    // 创建Toast元素
-    // ========================
-    createToast(message, type) {
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-
-        const icon = this.getIcon(type);
-        toast.innerHTML = `
-            <span class="toast-icon">${icon}</span>
-            <span class="toast-message">${message}</span>
-            <button class="toast-close" onclick="this.parentElement.remove()">×</button>
-        `;
-
-        return toast;
-    }
-
-    // ========================
-    // 获取图标
-    // ========================
-    getIcon(type) {
-        const icons = {
-            'info': 'ℹ️',
-            'success': '✅',
-            'warning': '⚠️',
-            'error': '❌'
-        };
-        return icons[type] || icons.info;
-    }
-
-    // ========================
-    // 隐藏Toast
-    // ========================
-    hide(toast) {
-        toast.classList.remove('show');
-        toast.classList.add('hide');
-
-        setTimeout(() => {
-            toast.remove();
-            this.toasts = this.toasts.filter(t => t !== toast);
-        }, 300);
-    }
-
-    // ========================
-    // 限制Toast数量
-    // ========================
-    limitToasts() {
-        while (this.toasts.length > this.maxToasts) {
-            const oldest = this.toasts.shift();
-            if (oldest) {
-                oldest.remove();
-            }
-        }
-    }
-
-    // ========================
-    // 快捷方法
-    // ========================
-    info(message, duration = 3000) {
-        return this.show(message, 'info', duration);
-    }
-
-    success(message, duration = 3000) {
-        return this.show(message, 'success', duration);
-    }
-
-    warning(message, duration = 3000) {
-        return this.show(message, 'warning', duration);
-    }
-
-    error(message, duration = 3000) {
-        return this.show(message, 'error', duration);
-    }
-
-    // ========================
-    // 清除所有
-    // ========================
-    clearAll() {
-        this.toasts.forEach(toast => toast.remove());
-        this.toasts = [];
-    }
+  setMaxToasts(max) {
+    this.maxToasts = max;
+  }
 }

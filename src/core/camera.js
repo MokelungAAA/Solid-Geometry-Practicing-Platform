@@ -1,82 +1,60 @@
 /**
+ * CameraManager
  * 相机管理器
- * 负责Three.js相机的创建和管理
  */
 
 import * as THREE from 'three';
+import { SIZES } from '../utils/constants.js';
 
 export class CameraManager {
-    constructor() {
-        this.camera = null;
-        this.defaultPosition = { x: 4, y: 3, z: 5 };
-        this.defaultLookAt = { x: 0, y: 0, z: 0 };
+  constructor(container) {
+    this.container = container;
+    this.width = container.clientWidth || SIZES.scene.width;
+    this.height = container.clientHeight || SIZES.scene.height;
+    
+    this.init();
+  }
 
-        this.init();
-    }
+  init() {
+    // 创建透视相机
+    this.camera = new THREE.PerspectiveCamera(
+      SIZES.camera.fov,
+      this.width / this.height,
+      SIZES.camera.near,
+      SIZES.camera.far
+    );
+    
+    // 设置初始位置
+    this.camera.position.set(
+      SIZES.camera.position.x,
+      SIZES.camera.position.y,
+      SIZES.camera.position.z
+    );
+    
+    // 看向原点
+    this.camera.lookAt(0, 0, 0);
+  }
 
-    /**
-     * 初始化相机
-     */
-    init() {
-        const container = document.getElementById('canvas-wrapper');
-        const width = container ? container.clientWidth : window.innerWidth;
-        const height = container ? container.clientHeight : window.innerHeight;
+  updateSize(width, height) {
+    this.width = width;
+    this.height = height;
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+  }
 
-        this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-        this.camera.position.set(
-            this.defaultPosition.x,
-            this.defaultPosition.y,
-            this.defaultPosition.z
-        );
-        this.camera.lookAt(
-            this.defaultLookAt.x,
-            this.defaultLookAt.y,
-            this.defaultLookAt.z
-        );
-    }
+  setPosition(x, y, z) {
+    this.camera.position.set(x, y, z);
+  }
 
-    /**
-     * 获取相机
-     */
-    getCamera() {
-        return this.camera;
-    }
+  lookAt(x, y, z) {
+    this.camera.lookAt(x, y, z);
+  }
 
-    /**
-     * 设置相机位置
-     */
-    setPosition(x, y, z) {
-        this.camera.position.set(x, y, z);
-    }
+  getCamera() {
+    return this.camera;
+  }
 
-    /**
-     * 设置相机看向的目标点
-     */
-    setLookAt(x, y, z) {
-        this.camera.lookAt(x, y, z);
-    }
-
-    /**
-     * 重置相机到默认位置
-     */
-    reset() {
-        this.setPosition(
-            this.defaultPosition.x,
-            this.defaultPosition.y,
-            this.defaultPosition.z
-        );
-        this.setLookAt(
-            this.defaultLookAt.x,
-            this.defaultLookAt.y,
-            this.defaultLookAt.z
-        );
-    }
-
-    /**
-     * 更新相机宽高比
-     */
-    updateAspect(width, height) {
-        this.camera.aspect = width / height;
-        this.camera.updateProjectionMatrix();
-    }
+  update() {
+    // 更新逻辑（如果需要）
+  }
 }

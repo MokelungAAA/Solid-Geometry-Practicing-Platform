@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   root: '.',
-  base: './',
+  base: '/Solid-Geometry-Practicing-Platform/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

@@ -1,390 +1,189 @@
-/* ========================================
-   Material You (Material Design 3) 主题系统
-   配色：灰白色 + 淡蓝色，简约风格
-   ======================================== */
+/* Material You (Material Design 3) 变量系统 */
 
 :root {
-    /* ===== 主色调 ===== */
-    --md-primary: #0ea5e9;           /* sky-500 */
-    --md-primary-light: #38bdf8;     /* sky-400 */
-    --md-primary-lighter: #7dd3fc;   /* sky-300 */
-    --md-primary-lightest: #bae6fd;  /* sky-200 */
-    --md-primary-dark: #0284c7;      /* sky-600 */
-    --md-primary-darker: #0369a1;    /* sky-700 */
+  /* ==================== 颜色系统 ==================== */
 
-    /* ===== 表面色 ===== */
-    --md-surface: #ffffff;
-    --md-surface-dim: #f8fafc;       /* slate-50 */
-    --md-surface-container: #f1f5f9; /* slate-100 */
-    --md-surface-container-low: #f8fafc; /* slate-50 */
-    --md-surface-container-high: #e2e8f0; /* slate-200 */
-    --md-surface-container-highest: #cbd5e1; /* slate-300 */
+  /* 主色调 */
+  --md-primary: #6750A4;
+  --md-on-primary: #FFFFFF;
+  --md-primary-container: #EADDFF;
+  --md-on-primary-container: #21005D;
 
-    /* ===== 容器色 ===== */
-    --md-primary-container: #dbeafe; /* blue-100 */
-    --md-on-primary-container: #1e3a5f;
-    --md-success-container: #dcfce7; /* green-100 */
-    --md-on-success-container: #14532d;
-    --md-warning-container: #fef3c7; /* amber-100 */
-    --md-on-warning-container: #78350f;
-    --md-error-container: #fee2e2; /* red-100 */
-    --md-on-error-container: #7f1d1d;
+  /* 次要色 */
+  --md-secondary: #625B71;
+  --md-on-secondary: #FFFFFF;
+  --md-secondary-container: #E8DEF8;
+  --md-on-secondary-container: #1D192B;
 
-    /* ===== 文字色 ===== */
-    --md-on-surface: #1e293b;        /* slate-800 */
-    --md-on-surface-variant: #475569; /* slate-600 */
-    --md-on-surface-disabled: #94a3b8; /* slate-400 */
+  /* 第三色 */
+  --md-tertiary: #7D5260;
+  --md-on-tertiary: #FFFFFF;
+  --md-tertiary-container: #FFD8E4;
+  --md-on-tertiary-container: #31111D;
 
-    /* ===== 状态色 ===== */
-    --md-success: #22c55e;           /* green-500 */
-    --md-warning: #f59e0b;           /* amber-500 */
-    --md-error: #ef4444;             /* red-500 */
-    --md-info: #3b82f6;              /* blue-500 */
+  /* 错误色 */
+  --md-error: #B3261E;
+  --md-on-error: #FFFFFF;
+  --md-error-container: #F9DEDC;
+  --md-on-error-container: #410E0B;
 
-    /* ===== 边框和阴影 ===== */
-    --md-outline: #e2e8f0;           /* slate-200 */
-    --md-outline-variant: #f1f5f9;   /* slate-100 */
-    --md-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --md-shadow-2: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
-    --md-shadow-3: 0 10px 15px rgba(0, 0, 0, 0.06), 0 4px 6px rgba(0, 0, 0, 0.05);
-    --md-shadow-4: 0 20px 25px rgba(0, 0, 0, 0.06), 0 8px 10px rgba(0, 0, 0, 0.04);
+  /* 表面色 */
+  --md-surface: #FFFBFE;
+  --md-on-surface: #1C1B1F;
+  --md-surface-variant: #E7E0EC;
+  --md-on-surface-variant: #49454F;
 
-    /* ===== 圆角 ===== */
-    --md-radius-xs: 4px;
-    --md-radius-sm: 8px;
-    --md-radius-md: 12px;
-    --md-radius-lg: 16px;
-    --md-radius-xl: 28px;
+  /* 背景色 */
+  --md-background: #FFFBFE;
+  --md-on-background: #1C1B1F;
 
-    /* ===== 间距 ===== */
-    --md-spacing-xs: 4px;
-    --md-spacing-sm: 8px;
-    --md-spacing-md: 12px;
-    --md-spacing-lg: 16px;
-    --md-spacing-xl: 24px;
-    --md-spacing-2xl: 32px;
+  /* 轮廓 */
+  --md-outline: #79747E;
+  --md-outline-variant: #CAC4D0;
 
-    /* ===== 字体 ===== */
-    --md-font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --md-font-size-xs: 11px;
-    --md-font-size-sm: 13px;
-    --md-font-size-md: 15px;
-    --md-font-size-lg: 17px;
-    --md-font-size-xl: 20px;
-    --md-font-size-2xl: 24px;
-    --md-font-size-xxl: 32px;
+  /* 阴影 */
+  --md-shadow: #000000;
+  --md-scrim: #000000;
 
-    /* ===== 动画 ===== */
-    --md-duration-fast: 150ms;
-    --md-duration-normal: 250ms;
-    --md-duration-slow: 350ms;
-    --md-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
-    --md-easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
-    --md-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  /* ==================== RGB 值（用于透明度） ==================== */
 
-    /* ===== 毛玻璃效果 ===== */
-    --md-backdrop: blur(20px);
-    --md-backdrop-bg: rgba(255, 255, 255, 0.8);
+  --md-primary-rgb: 103, 80, 164;
+  --md-on-primary-rgb: 255, 255, 255;
+  --md-surface-rgb: 255, 251, 254;
+  --md-on-surface-rgb: 28, 27, 31;
+  --md-surface-variant-rgb: 231, 224, 236;
+  --md-background-rgb: 255, 251, 254;
+
+  /* ==================== 字体系统 ==================== */
+
+  /* 字体族 */
+  --md-font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* 字体大小 */
+  --md-font-size-xs: 11px;
+  --md-font-size-sm: 12px;
+  --md-font-size-base: 14px;
+  --md-font-size-md: 16px;
+  --md-font-size-lg: 18px;
+  --md-font-size-xl: 20px;
+  --md-font-size-2xl: 24px;
+  --md-font-size-3xl: 28px;
+  --md-font-size-4xl: 32px;
+
+  /* 字体粗细 */
+  --md-font-weight-regular: 400;
+  --md-font-weight-medium: 500;
+  --md-font-weight-semibold: 600;
+  --md-font-weight-bold: 700;
+
+  /* 行高 */
+  --md-line-height-tight: 1.2;
+  --md-line-height-normal: 1.5;
+  --md-line-height-relaxed: 1.75;
+
+  /* ==================== 间距系统 ==================== */
+
+  --md-spacing-xs: 4px;
+  --md-spacing-sm: 8px;
+  --md-spacing-md: 16px;
+  --md-spacing-lg: 24px;
+  --md-spacing-xl: 32px;
+  --md-spacing-2xl: 48px;
+  --md-spacing-3xl: 64px;
+
+  /* ==================== 圆角系统 ==================== */
+
+  --md-radius-xs: 4px;
+  --md-radius-sm: 8px;
+  --md-radius-md: 12px;
+  --md-radius-lg: 16px;
+  --md-radius-xl: 28px;
+  --md-radius-full: 9999px;
+
+  /* ==================== 阴影系统 ==================== */
+
+  --md-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-shadow-md: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-shadow-lg: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  /* ==================== 动画系统 ==================== */
+
+  --md-duration-short: 150ms;
+  --md-duration-medium: 300ms;
+  --md-duration-long: 500ms;
+
+  --md-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-easing-decelerate: cubic-bezier(0, 0, 0, 1);
+  --md-easing-accelerate: cubic-bezier(0.3, 0, 1, 1);
+
+  /* ==================== 层级系统 ==================== */
+
+  --md-z-index-dropdown: 1000;
+  --md-z-index-sticky: 1020;
+  --md-z-index-fixed: 1030;
+  --md-z-index-modal-backdrop: 1040;
+  --md-z-index-modal: 1050;
+  --md-z-index-popover: 1060;
+  --md-z-index-tooltip: 1070;
+  --md-z-index-toast: 1080;
 }
 
-/* ===== 深色模式 ===== */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --md-primary: #38bdf8;
-        --md-primary-light: #7dd3fc;
-        --md-primary-lighter: #bae6fd;
-        --md-primary-lightest: #e0f2fe;
-        --md-primary-dark: #0ea5e9;
-        --md-primary-darker: #0284c7;
+/* ==================== 毛玻璃效果 ==================== */
 
-        --md-surface: #0f172a;
-        --md-surface-dim: #1e293b;
-        --md-surface-container: #334155;
-        --md-surface-container-low: #1e293b;
-        --md-surface-container-high: #475569;
-        --md-surface-container-highest: #64748b;
-
-        --md-on-surface: #f1f5f9;
-        --md-on-surface-variant: #94a3b8;
-        --md-on-surface-disabled: #64748b;
-
-        --md-outline: #334155;
-        --md-outline-variant: #1e293b;
-
-        --md-primary-container: #1e3a5f;
-        --md-on-primary-container: #dbeafe;
-        --md-success-container: #14532d;
-        --md-on-success-container: #dcfce7;
-        --md-warning-container: #78350f;
-        --md-on-warning-container: #fef3c7;
-        --md-error-container: #7f1d1d;
-        --md-on-error-container: #fee2e2;
-
-        --md-backdrop-bg: rgba(15, 23, 42, 0.8);
-    }
-}
-
-/* ===== Toast 通知 ===== */
-.toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    pointer-events: none;
-}
-
-.toast {
-    padding: 12px 20px;
-    border-radius: var(--md-radius-md);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    box-shadow: var(--md-shadow-3);
-    font-size: var(--md-font-size-sm);
-    pointer-events: auto;
-    opacity: 0;
-    transform: translateX(100%);
-    transition: all var(--md-duration-normal) var(--md-easing-standard);
-    backdrop-filter: var(--md-backdrop);
-    -webkit-backdrop-filter: var(--md-backdrop);
-    border: 1px solid var(--md-outline);
-    max-width: 360px;
-}
-
-.toast.show {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-.toast.hide {
-    opacity: 0;
-    transform: translateX(100%);
-}
-
-.toast-info {
-    border-left: 3px solid var(--md-info);
-    background: rgba(59, 130, 246, 0.08);
-}
-
-.toast-success {
-    border-left: 3px solid var(--md-success);
-    background: rgba(34, 197, 94, 0.08);
-}
-
-.toast-warning {
-    border-left: 3px solid var(--md-warning);
-    background: rgba(245, 158, 11, 0.08);
-}
-
-.toast-error {
-    border-left: 3px solid var(--md-error);
-    background: rgba(239, 68, 68, 0.08);
-}
-
-/* ===== 信息卡片折叠 ===== */
-.geometry-info-card.collapsed .info-card-stats {
-    display: none;
-}
-
-.geometry-info-card.collapsed .info-card-vertices {
-    display: none;
-}
-
-.geometry-info-card.collapsed .toggle-icon {
-    transform: rotate(180deg);
-}
-
-/* ===== 毛玻璃增强 ===== */
 .glass {
-    background: var(--md-backdrop-bg);
-    backdrop-filter: var(--md-backdrop);
-    -webkit-backdrop-filter: var(--md-backdrop);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(var(--md-surface-rgb), 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(var(--md-on-surface-rgb), 0.1);
 }
 
 .glass-light {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(var(--md-surface-rgb), 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(var(--md-on-surface-rgb), 0.05);
 }
 
-/* ===== 练习总结覆盖层 ===== */
-.practice-summary-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    animation: fadeIn 0.3s var(--md-easing-standard);
-}
+/* ==================== 暗色主题 ==================== */
 
-.practice-summary {
-    background: var(--md-surface);
-    border-radius: var(--md-radius-lg);
-    padding: var(--md-spacing-2xl);
-    box-shadow: var(--md-shadow-4);
-    text-align: center;
-    min-width: 300px;
-    max-width: 500px;
-}
+[data-theme="dark"] {
+  --md-primary: #D0BCFF;
+  --md-on-primary: #381E72;
+  --md-primary-container: #4F378B;
+  --md-on-primary-container: #EADDFF;
 
-.practice-summary h3 {
-    font-size: var(--md-font-size-xl);
-    margin-bottom: var(--md-spacing-lg);
-    color: var(--md-primary);
-}
+  --md-secondary: #CCC2DC;
+  --md-on-secondary: #332D41;
+  --md-secondary-container: #4A4458;
+  --md-on-secondary-container: #E8DEF8;
 
-.summary-stats p {
-    font-size: var(--md-font-size-md);
-    margin: var(--md-spacing-sm) 0;
-    color: var(--md-on-surface);
-}
+  --md-tertiary: #EFB8C8;
+  --md-on-tertiary: #492532;
+  --md-tertiary-container: #633B48;
+  --md-on-tertiary-container: #FFD8E4;
 
-/* ===== 设置面板 ===== */
-.settings-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9000;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    animation: fadeIn 0.2s var(--md-easing-standard);
-}
+  --md-error: #F2B8B5;
+  --md-on-error: #601410;
+  --md-error-container: #8C1D18;
+  --md-on-error-container: #F9DEDC;
 
-.settings-panel {
-    background: var(--md-surface);
-    border-radius: var(--md-radius-lg);
-    padding: 0;
-    box-shadow: var(--md-shadow-4);
-    width: 420px;
-    max-width: 90vw;
-    max-height: 80vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
+  --md-surface: #1C1B1F;
+  --md-on-surface: #E6E1E5;
+  --md-surface-variant: #49454F;
+  --md-on-surface-variant: #CAC4D0;
 
-.settings-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--md-spacing-lg) var(--md-spacing-xl);
-    border-bottom: 1px solid var(--md-outline);
-}
+  --md-background: #1C1B1F;
+  --md-on-background: #E6E1E5;
 
-.settings-header h3 {
-    font-size: var(--md-font-size-lg);
-    font-weight: 600;
-    color: var(--md-on-surface);
-    margin: 0;
-}
+  --md-outline: #938F99;
+  --md-outline-variant: #49454F;
 
-.settings-body {
-    padding: var(--md-spacing-xl);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--md-spacing-xl);
-}
-
-.settings-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--md-spacing-md);
-}
-
-.settings-group-title {
-    font-size: var(--md-font-size-sm);
-    font-weight: 600;
-    color: var(--md-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.settings-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--md-spacing-sm) 0;
-}
-
-.settings-item-label {
-    font-size: var(--md-font-size-sm);
-    color: var(--md-on-surface);
-}
-
-.settings-item-desc {
-    font-size: var(--md-font-size-xs);
-    color: var(--md-on-surface-variant);
-    margin-top: 2px;
-}
-
-/* ===== 证明模板面板 ===== */
-.proof-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--md-spacing-xs);
-    padding: var(--md-spacing-sm);
-    background: var(--md-surface-container);
-    border-radius: var(--md-radius-sm);
-    margin-bottom: var(--md-spacing-sm);
-}
-
-.proof-symbol-btn {
-    padding: 4px 10px;
-    border: 1px solid var(--md-outline);
-    border-radius: var(--md-radius-xs);
-    background: var(--md-surface);
-    color: var(--md-on-surface);
-    font-size: var(--md-font-size-sm);
-    cursor: pointer;
-    transition: all var(--md-duration-fast) var(--md-easing-standard);
-    font-family: 'Times New Roman', serif;
-}
-
-.proof-symbol-btn:hover {
-    background: var(--md-primary-container);
-    border-color: var(--md-primary);
-    color: var(--md-on-primary-container);
-}
-
-.proof-textarea {
-    width: 100%;
-    min-height: 120px;
-    padding: var(--md-spacing-md);
-    border: 1px solid var(--md-outline);
-    border-radius: var(--md-radius-sm);
-    font-family: 'Times New Roman', 'Noto Sans SC', serif;
-    font-size: var(--md-font-size-md);
-    color: var(--md-on-surface);
-    background: var(--md-surface);
-    resize: vertical;
-    outline: none;
-    line-height: 1.8;
-}
-
-.proof-textarea:focus {
-    border-color: var(--md-primary);
-    box-shadow: 0 0 0 2px var(--md-primary-lightest);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  /* 暗色主题 RGB 值 */
+  --md-primary-rgb: 208, 188, 255;
+  --md-on-primary-rgb: 56, 30, 114;
+  --md-surface-rgb: 28, 27, 31;
+  --md-on-surface-rgb: 230, 225, 229;
+  --md-surface-variant-rgb: 73, 69, 79;
+  --md-background-rgb: 28, 27, 31;
 }

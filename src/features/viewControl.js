@@ -1,190 +1,96 @@
-// ========================
-// 视图控制管理器
-// ========================
+/**
+ * ViewControlManager
+ * 视图控制器（轨道控制器）
+ */
+
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as THREE from 'three';
 
 export class ViewControlManager {
-    constructor(camera, controls) {
-        this.camera = camera;
-        this.controls = controls;
+  constructor(camera, renderer) {
+    this.camera = camera;
+    this.renderer = renderer;
+    this.controls = null;
+    this.currentView = 'perspective';
+    this.viewPresets = {
+      front: { position: new THREE.Vector3(0, 0, 5), target: new THREE.Vector3(0, 0, 0) },
+      side: { position: new THREE.Vector3(5, 0, 0), target: new THREE.Vector3(0, 0, 0) },
+      top: { position: new THREE.Vector3(0, 5, 0), target: new THREE.Vector3(0, 0, 0) },
+      perspective: { position: new THREE.Vector3(3, 2, 3), target: new THREE.Vector3(0, 0, 0) }
+    };
+    this.init();
+  }
 
-        // 预设视图位置
-        this.viewPresets = {
-            'default': { x: 5, y: 5, z: 5 },
-            'front': { x: 0, y: 0, z: 8 },
-            'back': { x: 0, y: 0, z: -8 },
-            'left': { x: -8, y: 0, z: 0 },
-            'right': { x: 8, y: 0, z: 0 },
-            'top': { x: 0, y: 8, z: 0.01 },
-            'bottom': { x: 0, y: -8, z: 0.01 }
-        };
+  init() {
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.05;
+    this.controls.screenSpacePanning = false;
+    this.controls.minDistance = 1;
+    this.controls.maxDistance = 20;
+    this.controls.maxPolarAngle = Math.PI;
+    this.controls.target.set(0, 0, 0);
+  }
 
-        // 动画配置
-        this.animationDuration = 0.5;
-        this.isAnimating = false;
+  update() {
+    if (this.controls) {
+      this.controls.update();
     }
+  }
 
-    // ========================
-    // 设置视图
-    // ========================
-    setView(viewName, duration = 0.5) {
-        const preset = this.viewPresets[viewName];
-        if (!preset) {
-            console.warn(`未知视图: ${viewName}`);
-            return;
-        }
-
-        this.animateCamera(
-            new THREE.Vector3(preset.x, preset.y, preset.z),
-            duration
-        );
+  reset() {
+    if (this.controls) {
+      this.controls.reset();
+      this.currentView = 'perspective';
     }
+  }
 
-    // ========================
-    // 动画过渡相机位置
-    // ========================
-    animateCamera(targetPosition, duration = 0.5) {
-        if (this.isAnimating) return;
-
-        this.isAnimating = true;
-
-        const startPosition = this.camera.position.clone();
-        const startTime = performance.now();
-
-        const animate = (currentTime) => {
-            const elapsed = (currentTime - startTime) / 1000;
-            const progress = Math.min(elapsed / duration, 1);
-
-            // 使用缓动函数
-            const eased = this.easeInOutCubic(progress);
-
-            // 插值位置
-            this.camera.position.lerpVectors(startPosition, targetPosition, eased);
-
-            // 更新控制器
-            if (this.controls) {
-                this.controls.update();
-            }
-
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                this.isAnimating = false;
-            }
-        };
-
-        requestAnimationFrame(animate);
+  setView(viewName, duration = 1) {
+    const preset = this.viewPresets[viewName];
+    if (!preset) return;
+    this.currentView = viewName;
+    if (typeof gsap !== 'undefined') {
+      gsap.to(this.camera.position, {
+        x: preset.position.x, y: preset.position.y, z: preset.position.z,
+        duration, ease: 'power2.inOut',
+        onUpdate: () => this.camera.lookAt(this.controls.target)
+      });
+      gsap.to(this.controls.target, {
+        x: preset.target.x, y: preset.target.y, z: preset.target.z,
+        duration, ease: 'power2.inOut'
+      });
+    } else {
+      this.camera.position.copy(preset.position);
+      this.controls.target.copy(preset.target);
+      this.controls.update();
     }
+  }
 
-    // ========================
-    // 缓动函数
-    // ========================
-    easeInOutCubic(t) {
-        return t < 0.5
-            ? 4 * t * t * t
-            : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  getCurrentView() {
+    return this.currentView;
+  }
+
+  setTarget(x, y, z) {
+    if (this.controls) {
+      this.controls.target.set(x, y, z);
     }
+  }
 
-    // ========================
-    // 重置视图
-    // ========================
-    resetView(duration = 0.5) {
-        this.setView('default', duration);
+  enable() {
+    if (this.controls) {
+      this.controls.enabled = true;
     }
+  }
 
-    // ========================
-    // 获取当前视图信息
-    // ========================
-    getCurrentViewInfo() {
-        return {
-            position: this.camera.position.clone(),
-            rotation: this.camera.rotation.clone(),
-            zoom: this.camera.zoom
-        };
+  disable() {
+    if (this.controls) {
+      this.controls.enabled = false;
     }
+  }
 
-    // ========================
-    // 设置相机到指定位置
-    // ========================
-    setCameraPosition(x, y, z, lookAtCenter = true) {
-        this.camera.position.set(x, y, z);
-
-        if (lookAtCenter) {
-            this.camera.lookAt(0, 0, 0);
-        }
-
-        if (this.controls) {
-            this.controls.update();
-        }
+  dispose() {
+    if (this.controls) {
+      this.controls.dispose();
     }
-
-    // ========================
-    // 聚焦到指定点
-    // ========================
-    focusOnPoint(point, distance = 5) {
-        const direction = new THREE.Vector3()
-            .subVectors(this.camera.position, point)
-            .normalize();
-
-        const targetPosition = point.clone().add(
-            direction.multiplyScalar(distance)
-        );
-
-        this.animateCamera(targetPosition);
-    }
-
-    // ========================
-    // 围绕点旋转
-    // ========================
-    orbitAroundPoint(point, angle, axis = 'y') {
-        const offset = this.camera.position.clone().sub(point);
-
-        const rotationMatrix = new THREE.Matrix4();
-        const axisVector = axis === 'x'
-            ? new THREE.Vector3(1, 0, 0)
-            : axis === 'z'
-                ? new THREE.Vector3(0, 0, 1)
-                : new THREE.Vector3(0, 1, 0);
-
-        rotationMatrix.makeRotationAxis(axisVector, angle);
-        offset.applyMatrix4(rotationMatrix);
-
-        this.camera.position.copy(point).add(offset);
-        this.camera.lookAt(point);
-
-        if (this.controls) {
-            this.controls.target.copy(point);
-            this.controls.update();
-        }
-    }
-
-    // ========================
-    // 获取相机朝向
-    // ========================
-    getCameraDirection() {
-        const direction = new THREE.Vector3();
-        this.camera.getWorldDirection(direction);
-        return direction;
-    }
-
-    // ========================
-    // 检查是否正在动画
-    // ========================
-    isAnimatingCamera() {
-        return this.isAnimating;
-    }
-
-    // ========================
-    // 停止动画
-    // ========================
-    stopAnimation() {
-        this.isAnimating = false;
-    }
-
-    // ========================
-    // 获取所有视图名称
-    // ========================
-    getViewNames() {
-        return Object.keys(this.viewPresets);
-    }
+  }
 }

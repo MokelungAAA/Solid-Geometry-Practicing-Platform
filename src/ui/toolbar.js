@@ -1,237 +1,92 @@
-// ========================
-// 工具栏管理器
-// ========================
+/**
+ * ToolbarManager
+ * 底部工具栏管理器
+ */
 
 export class ToolbarManager {
-    constructor() {
-        this.elements = {};
-        this.callbacks = {};
+  constructor() {
+    this.toolbar = document.getElementById('toolbar');
+    this.buttons = [];
+    this.activeButton = null;
+    this.buttonGroups = {};
+  }
 
-        this.init();
+  init(options = []) {
+    this.toolbar.innerHTML = '';
+    options.forEach(option => {
+      const button = this.createButton(option);
+      this.toolbar.appendChild(button);
+      this.buttons.push({ element: button, ...option });
+    });
+  }
+
+  addButtonGroup(groupName, options) {
+    const group = document.createElement('div');
+    group.className = 'toolbar-group';
+    group.setAttribute('data-group', groupName);
+    options.forEach(option => {
+      const button = this.createButton(option);
+      group.appendChild(button);
+      this.buttons.push({ element: button, ...option });
+    });
+    this.toolbar.appendChild(group);
+    this.buttonGroups[groupName] = group;
+  }
+
+  createButton(option) {
+    const button = document.createElement('button');
+    button.className = 'toolbar-btn';
+    button.setAttribute('data-action', option.action);
+    button.setAttribute('title', option.tooltip || option.label);
+    if (option.icon) {
+      button.innerHTML = option.icon;
+    } else {
+      button.textContent = option.label;
     }
-
-    // ========================
-    // 初始化
-    // ========================
-    init() {
-        this.cacheElements();
-        this.bindEvents();
+    if (option.onClick) {
+      button.addEventListener('click', option.onClick);
     }
+    return button;
+  }
 
-    // ========================
-    // 缓存DOM元素
-    // ========================
-    cacheElements() {
-        this.elements = {
-            geometrySelect: document.getElementById('geometrySelect'),
-            sizeSlider: document.getElementById('sizeSlider'),
-            sizeValue: document.getElementById('sizeValue'),
-            toggleFaces: document.getElementById('toggleFaces'),
-            toggleEdges: document.getElementById('toggleEdges'),
-            toggleVertices: document.getElementById('toggleVertices'),
-            toggleLabels: document.getElementById('toggleLabels'),
-            setViewDefault: document.getElementById('setViewDefault'),
-            setViewFront: document.getElementById('setViewFront'),
-            setViewSide: document.getElementById('setViewSide'),
-            setViewPerspective: document.getElementById('setViewPerspective'),
-            toggleSectionMode: document.getElementById('toggleSectionMode'),
-            clearSectionPoints: document.getElementById('clearSectionPoints'),
-            createSection: document.getElementById('createSection'),
-            createFaceSection: document.getElementById('createFaceSection'),
-            toggleAnimate: document.getElementById('toggleAnimate'),
-            restartAnimate: document.getElementById('restartAnimate'),
-            resetAll: document.getElementById('resetAll'),
-            viewButtons: document.querySelectorAll('.view-btn')
-        };
+  setActive(action) {
+    this.buttons.forEach(btn => {
+      if (btn.action === action) {
+        btn.element.classList.add('active');
+        this.activeButton = btn;
+      } else {
+        btn.element.classList.remove('active');
+      }
+    });
+  }
+
+  disable(action) {
+    const btn = this.buttons.find(b => b.action === action);
+    if (btn) {
+      btn.element.disabled = true;
+      btn.element.classList.add('disabled');
     }
+  }
 
-    // ========================
-    // 绑定事件
-    // ========================
-    bindEvents() {
-        // 几何体选择
-        if (this.elements.geometrySelect) {
-            this.elements.geometrySelect.addEventListener('change', (e) => {
-                this.trigger('geometryChange', e.target.value);
-            });
-        }
-
-        // 尺寸滑块
-        if (this.elements.sizeSlider) {
-            this.elements.sizeSlider.addEventListener('input', (e) => {
-                const value = parseFloat(e.target.value);
-                if (this.elements.sizeValue) {
-                    this.elements.sizeValue.textContent = value.toFixed(1);
-                }
-                this.trigger('sizeChange', value);
-            });
-        }
-
-        // 可见性切换
-        if (this.elements.toggleFaces) {
-            this.elements.toggleFaces.addEventListener('click', () => {
-                this.trigger('toggleFaces');
-            });
-        }
-
-        if (this.elements.toggleEdges) {
-            this.elements.toggleEdges.addEventListener('click', () => {
-                this.trigger('toggleEdges');
-            });
-        }
-
-        if (this.elements.toggleVertices) {
-            this.elements.toggleVertices.addEventListener('click', () => {
-                this.trigger('toggleVertices');
-            });
-        }
-
-        if (this.elements.toggleLabels) {
-            this.elements.toggleLabels.addEventListener('click', () => {
-                this.trigger('toggleLabels');
-            });
-        }
-
-        // 视图按钮
-        this.elements.viewButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const view = btn.dataset.view;
-                this.trigger('viewChange', view);
-            });
-        });
-
-        // 截面功能
-        if (this.elements.toggleSectionMode) {
-            this.elements.toggleSectionMode.addEventListener('click', () => {
-                this.trigger('toggleSectionMode');
-            });
-        }
-
-        if (this.elements.clearSectionPoints) {
-            this.elements.clearSectionPoints.addEventListener('click', () => {
-                this.trigger('clearSectionPoints');
-            });
-        }
-
-        if (this.elements.createSection) {
-            this.elements.createSection.addEventListener('click', () => {
-                this.trigger('createSection');
-            });
-        }
-
-        if (this.elements.createFaceSection) {
-            this.elements.createFaceSection.addEventListener('click', () => {
-                this.trigger('createFaceSection');
-            });
-        }
-
-        // 展开动画
-        if (this.elements.toggleAnimate) {
-            this.elements.toggleAnimate.addEventListener('click', () => {
-                this.trigger('toggleAnimate');
-            });
-        }
-
-        if (this.elements.restartAnimate) {
-            this.elements.restartAnimate.addEventListener('click', () => {
-                this.trigger('restartAnimate');
-            });
-        }
-
-        // 重置
-        if (this.elements.resetAll) {
-            this.elements.resetAll.addEventListener('click', () => {
-                this.trigger('resetAll');
-            });
-        }
+  enable(action) {
+    const btn = this.buttons.find(b => b.action === action);
+    if (btn) {
+      btn.element.disabled = false;
+      btn.element.classList.remove('disabled');
     }
+  }
 
-    // ========================
-    // 事件监听
-    // ========================
-    on(event, callback) {
-        if (!this.callbacks[event]) {
-            this.callbacks[event] = [];
-        }
-        this.callbacks[event].push(callback);
-    }
+  show() {
+    this.toolbar.style.display = 'flex';
+  }
 
-    // ========================
-    // 触发事件
-    // ========================
-    trigger(event, data) {
-        if (this.callbacks[event]) {
-            this.callbacks[event].forEach(cb => cb(data));
-        }
-    }
+  hide() {
+    this.toolbar.style.display = 'none';
+  }
 
-    // ========================
-    // 更新展开按钮状态
-    // ========================
-    updateAnimateButton(isPlaying) {
-        if (this.elements.toggleAnimate) {
-            this.elements.toggleAnimate.textContent = isPlaying ? '⏸️ 暂停' : '▶️ 播放';
-        }
-    }
-
-    // ========================
-    // 更新截面模式按钮状态
-    // ========================
-    updateSectionModeButton(isActive) {
-        if (this.elements.toggleSectionMode) {
-            this.elements.toggleSectionMode.classList.toggle('active', isActive);
-        }
-    }
-
-    // ========================
-    // 更新可见性按钮状态
-    // ========================
-    updateToggleButtonState(buttonId, isActive) {
-        const btn = this.elements[buttonId];
-        if (btn) {
-            btn.classList.toggle('active', isActive);
-        }
-    }
-
-    // ========================
-    // 设置几何体选择器的值
-    // ========================
-    setGeometryValue(value) {
-        if (this.elements.geometrySelect) {
-            this.elements.geometrySelect.value = value;
-        }
-    }
-
-    // ========================
-    // 设置尺寸滑块
-    // ========================
-    setSizeSlider(value, min = 0.5, max = 3, step = 0.1) {
-        if (this.elements.sizeSlider) {
-            this.elements.sizeSlider.min = min;
-            this.elements.sizeSlider.max = max;
-            this.elements.sizeSlider.step = step;
-            this.elements.sizeSlider.value = value;
-        }
-        if (this.elements.sizeValue) {
-            this.elements.sizeValue.textContent = value.toFixed(1);
-        }
-    }
-
-    // ========================
-    // 获取当前几何体
-    // ========================
-    getCurrentGeometry() {
-        return this.elements.geometrySelect
-            ? this.elements.geometrySelect.value
-            : 'cube';
-    }
-
-    // ========================
-    // 获取当前尺寸
-    // ========================
-    getCurrentSize() {
-        return this.elements.sizeSlider
-            ? parseFloat(this.elements.sizeSlider.value)
-            : 2;
-    }
+  dispose() {
+    this.toolbar.innerHTML = '';
+    this.buttons = [];
+    this.buttonGroups = {};
+  }
 }

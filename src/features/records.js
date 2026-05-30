@@ -1,239 +1,128 @@
 /**
- * 做题记录管理器
- * 负责记录的存储、导出、导入等功能
+ * RecordsManager
+ * 做题记录管理
  */
 
 export class RecordsManager {
-    constructor() {
-        this.storageKey = 'solid-geometry-records';
-        this.records = [];
+  constructor() {
+    this.records = [];
+    this.currentSession = null;
+  }
 
-        // 加载已有记录
-        this.loadRecords();
+  startSession(geometryType) {
+    this.currentSession = {
+      geometryType,
+      startTime: Date.now(),
+      questions: [],
+      score: 0
+    };
+    return this.currentSession;
+  }
+
+  addQuestion(question, answer, isCorrect) {
+    if (!this.currentSession) {
+      return null;
     }
-
-    /**
-     * 从localStorage加载记录
-     */
-    loadRecords() {
-        try {
-            const data = localStorage.getItem(this.storageKey);
-            if (data) {
-                this.records = JSON.parse(data);
-            }
-        } catch (error) {
-            console.error('加载记录失败:', error);
-            this.records = [];
-        }
+    const record = {
+      questionId: question.id,
+      questionText: question.questionText,
+      answer,
+      correctAnswer: question.correctAnswer,
+      isCorrect,
+      timestamp: Date.now()
+    };
+    this.currentSession.questions.push(record);
+    if (isCorrect) {
+      this.currentSession.score++;
     }
+    return record;
+  }
 
-    /**
-     * 保存记录到localStorage
-     */
-    saveRecords() {
-        try {
-            localStorage.setItem(this.storageKey, JSON.stringify(this.records));
-        } catch (error) {
-            console.error('保存记录失败:', error);
-        }
+  endSession() {
+    if (!this.currentSession) {
+      return null;
     }
+    this.currentSession.endTime = Date.now();
+    this.currentSession.duration = this.currentSession.endTime - this.currentSession.startTime;
+    this.currentSession.totalQuestions = this.currentSession.questions.length;
+    this.currentSession.accuracy = this.currentSession.totalQuestions > 0
+      ? (this.currentSession.score / this.currentSession.totalQuestions * 100).toFixed(2)
+      : 0;
+    this.records.push(this.currentSession);
+    const session = this.currentSession;
+    this.currentSession = null;
+    this.saveToStorage();
+    return session;
+  }
 
-    /**
-     * 添加记录
-     */
-    addRecord(record) {
-        this.records.unshift(record); // 新记录添加到开头
-        this.saveRecords();
-        return record;
+  getRecords() {
+    return this.records;
+  }
+
+  getRecordsByGeometryType(type) {
+    return this.records.filter(r => r.geometryType === type);
+  }
+
+  getRecordsByDate(date) {
+    return this.records.filter(r => {
+      const recordDate = new Date(r.startTime).toDateString();
+      return recordDate === date.toDateString();
+    });
+  }
+
+  getStats() {
+    const totalSessions = this.records.length;
+    const totalQuestions = this.records.reduce((sum, r) => sum + r.totalQuestions, 0);
+    const totalCorrect = this.records.reduce((sum, r) => sum + r.score, 0);
+    const avgAccuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions * 100).toFixed(2) : 0;
+    return {
+      totalSessions,
+      totalQuestions,
+      totalCorrect,
+      avgAccuracy: parseFloat(avgAccuracy)
+    };
+  }
+
+  clearRecords() {
+    this.records = [];
+    this.saveToStorage();
+  }
+
+  saveToStorage() {
+    try {
+      localStorage.setItem('solid-geometry-records', JSON.stringify(this.records));
+    } catch (e) {
+      console.error('Failed to save records:', e);
     }
+  }
 
-    /**
-     * 删除记录
-     */
-    deleteRecord(index) {
-        if (index >= 0 && index < this.records.length) {
-            this.records.splice(index, 1);
-            this.saveRecords();
-            return true;
-        }
-        return false;
+  loadFromStorage() {
+    try {
+      const data = localStorage.getItem('solid-geometry-records');
+      if (data) {
+        this.records = JSON.parse(data);
+      }
+    } catch (e) {
+      console.error('Failed to load records:', e);
     }
+  }
 
-    /**
-     * 清空记录
-     */
-    clearRecords() {
-        this.records = [];
-        this.saveRecords();
-    }
+  exportRecords() {
+    return JSON.stringify(this.records, null, 2);
+  }
 
-    /**
-     * 获取所有记录
-     */
-    getRecords() {
-        return this.records;
-    }
-
-    /**
-     * 获取统计信息
-     */
-    getStats() {
-        if (this.records.length === 0) {
-            return {
-                totalPractices: 0,
-                totalQuestions: 0,
-                correctAnswers: 0,
-                avgAccuracy: 0,
-                totalTime: 0
-            };
-        }
-
-        let totalQuestions = 0;
-        let correctAnswers = 0;
-        let totalTime = 0;
-
-        this.records.forEach(record => {
-            if (record.stats) {
-                totalQuestions += record.stats.total || 0;
-                correctAnswers += record.stats.correct || 0;
-            }
-            if (record.totalTime) {
-                totalTime += record.totalTime;
-            }
-        });
-
-        return {
-            totalPractices: this.records.length,
-            totalQuestions: totalQuestions,
-            correctAnswers: correctAnswers,
-            avgAccuracy: totalQuestions > 0 ? (correctAnswers / totalQuestions * 100).toFixed(1) : 0,
-            totalTime: totalTime
-        };
-    }
-
-    /**
-     * 导出记录为JSON
-     */
-    exportToJSON() {
-        const data = {
-            version: '1.0',
-            exportDate: new Date().toISOString(),
-            records: this.records
-        };
-
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-
-        // 创建下载链接
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `立体几何练习记录_${this.formatDate(new Date())}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
+  importRecords(json) {
+    try {
+      const data = JSON.parse(json);
+      if (Array.isArray(data)) {
+        this.records = data;
+        this.saveToStorage();
         return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('Failed to import records:', e);
+      return false;
     }
-
-    /**
-     * 从JSON导入记录
-     */
-    importFromJSON(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-
-                    // 验证数据格式
-                    if (!data.records || !Array.isArray(data.records)) {
-                        reject(new Error('无效的记录文件格式'));
-                        return;
-                    }
-
-                    // 合并记录（避免重复）
-                    const existingDates = new Set(this.records.map(r => r.date));
-                    const newRecords = data.records.filter(r => !existingDates.has(r.date));
-
-                    this.records = [...newRecords, ...this.records];
-                    this.saveRecords();
-
-                    resolve({
-                        imported: newRecords.length,
-                        total: this.records.length
-                    });
-                } catch (error) {
-                    reject(error);
-                }
-            };
-
-            reader.onerror = () => {
-                reject(new Error('文件读取失败'));
-            };
-
-            reader.readAsText(file);
-        });
-    }
-
-    /**
-     * 格式化日期
-     */
-    formatDate(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${year}${month}${day}_${hours}${minutes}`;
-    }
-
-    /**
-     * 获取正确率趋势数据
-     */
-    getAccuracyTrend(days = 7) {
-        const trend = [];
-        const now = new Date();
-
-        for (let i = days - 1; i >= 0; i--) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - i);
-            date.setHours(0, 0, 0, 0);
-
-            const nextDate = new Date(date);
-            nextDate.setDate(nextDate.getDate() + 1);
-
-            // 筛选当天的记录
-            const dayRecords = this.records.filter(record => {
-                const recordDate = new Date(record.date);
-                return recordDate >= date && recordDate < nextDate;
-            });
-
-            // 计算当天的平均正确率
-            let accuracy = 0;
-            if (dayRecords.length > 0) {
-                let totalQuestions = 0;
-                let correctAnswers = 0;
-
-                dayRecords.forEach(record => {
-                    if (record.stats) {
-                        totalQuestions += record.stats.total || 0;
-                        correctAnswers += record.stats.correct || 0;
-                    }
-                });
-
-                accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions * 100) : 0;
-            }
-
-            trend.push({
-                date: date.toISOString().split('T')[0],
-                accuracy: accuracy,
-                count: dayRecords.length
-            });
-        }
-
-        return trend;
-    }
+  }
 }
