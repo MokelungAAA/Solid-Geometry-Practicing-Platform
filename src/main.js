@@ -113,7 +113,7 @@ class SolidGeometryApp {
   initFeatures() {
     this.crossSectionManager = new CrossSectionManager(this.scene, this.camera, this.renderer);
     this.crossSectionManager.onModeChange = (isActive) => {
-      this.updateStatusBar(isActive ? '截面模式：点击顶点选择截面点' : '就绪');
+      this.updateStatusBar(isActive ? '截面模式：点击顶点或棱上选择截面点' : '就绪');
     };
     this.crossSectionManager.onVertexSelect = (vertexData) => {
       this.showToast(`已选择点 ${vertexData.index + 1}`, 'success');
@@ -135,12 +135,15 @@ class SolidGeometryApp {
   initUI() {
     this.toastManager = new ToastManager();
     this.settingsManager = new SettingsManager();
+    this.settingsManager.loadSettings();
+    this.settingsManager.onChange((settings) => this._applySettings(settings));
     this.themeManager = new ThemeManager();
     this.themeManager.init();
     this.responsiveManager = new ResponsiveManager();
     this.keyboardManager = new KeyboardManager();
     this.touchManager = new TouchManager();
     this.initGeometrySelector();
+    this._applySettings(this.settingsManager.getAll());
   }
 
   initGeometrySelector() {
@@ -253,22 +256,38 @@ class SolidGeometryApp {
 
     // 辅助元素
     document.getElementById('btn-grid')?.addEventListener('click', (e) => {
-      this.sceneManager.toggleGrid();
-      e.currentTarget.classList.toggle('active');
+      const visible = !this.settingsManager.getSetting('showGrid');
+      this.settingsManager.setSetting('showGrid', visible);
+      e.currentTarget.classList.toggle('active', visible);
     });
     document.getElementById('btn-axes')?.addEventListener('click', (e) => {
-      this.sceneManager.toggleAxes();
-      e.currentTarget.classList.toggle('active');
+      const visible = !this.settingsManager.getSetting('showAxes');
+      this.settingsManager.setSetting('showAxes', visible);
+      e.currentTarget.classList.toggle('active', visible);
     });
 
     // 展开/折叠
-    document.getElementById('btn-unfold')?.addEventListener('click', () => this.unfoldManager.animate(1));
-    document.getElementById('btn-fold')?.addEventListener('click', () => this.unfoldManager.animate(0));
+    document.getElementById('btn-unfold')?.addEventListener('click', () => {
+      if (!this.unfoldManager.unfoldGroup) return;
+      this.unfoldManager.animate(1);
+      if (this.geometryGroup) this.geometryGroup.visible = false;
+      this._syncUnfoldSlider();
+    });
+    document.getElementById('btn-fold')?.addEventListener('click', () => {
+      if (!this.unfoldManager.unfoldGroup) return;
+      this.unfoldManager.animate(0);
+      this._syncUnfoldSlider(() => {
+        if (this.geometryGroup) this.geometryGroup.visible = true;
+      });
+    });
     document.getElementById('unfold-slider')?.addEventListener('input', (e) => {
       const progress = parseInt(e.target.value) / 100;
       this.unfoldManager.setProgress(progress);
       const el = document.getElementById('unfold-value');
       if (el) el.textContent = `${e.target.value}%`;
+      if (this.geometryGroup) {
+        this.geometryGroup.visible = progress === 0;
+      }
     });
 
     // 截面工具
@@ -283,7 +302,7 @@ class SolidGeometryApp {
 
     // 练习模式
     document.getElementById('btn-start-practice')?.addEventListener('click', () => this.startPractice());
-    document.getElementById('btn-random-question')?.addEventListener('click', () => this.randomQuestion());
+    document.getElementById('btn-random-question')?.addEventListener('click', () => this.randomGeometry());
 
     // 做题记录
     document.getElementById('btn-export-records')?.addEventListener('click', () => this.exportRecords());
@@ -331,11 +350,15 @@ class SolidGeometryApp {
     const config = GEOMETRY_CONFIGS[type];
     if (!config) return;
     this.geometryGroup = this.geometryFactory.createGeometry(config, { showFaces: true, showEdges: true, showVertices: true, showLabels: true });
+    this._addCoordinateLabels(this.geometryGroup, config);
+    this._addEdgeLengthLabels(this.geometryGroup, config);
     this.scene.add(this.geometryGroup);
+    this._applySettings(this.settingsManager.getAll());
     this.currentGeometryType = type;
     if (config.unfoldConfig) {
       this.unfoldManager.createUnfoldGroup(config, this.geometryFactory.currentVertices);
     }
+    this.updateUnfoldButtons();
     const faceMeshes = [];
     this.geometryGroup.traverse(child => {
       if (child.isMesh && child.name.startsWith('face_')) {
@@ -343,6 +366,10 @@ class SolidGeometryApp {
       }
     });
     this.crossSectionManager.setFaceMeshes(faceMeshes);
+    this.crossSectionManager.setGeometryData(
+      this.geometryFactory.currentVertices,
+      config.edges
+    );
     this.updateGeometryInfo(type);
     this.updateVertexSelector();
     this.updateGeometrySelectorButtons(type);
@@ -395,6 +422,49 @@ class SolidGeometryApp {
     });
   }
 
+  _syncUnfoldSlider(onComplete) {
+    const slider = document.getElementById('unfold-slider');
+    const valueEl = document.getElementById('unfold-value');
+    const tick = () => {
+      const pct = Math.round(this.unfoldManager.progress * 100);
+      if (slider) slider.value = pct;
+      if (valueEl) valueEl.textContent = `${pct}%`;
+      const anim = this.unfoldManager.animation;
+      if (anim && anim.isActive && anim.isActive()) {
+        requestAnimationFrame(tick);
+      } else {
+        const finalPct = Math.round(this.unfoldManager.progress * 100);
+        if (slider) slider.value = finalPct;
+        if (valueEl) valueEl.textContent = `${finalPct}%`;
+        if (onComplete) onComplete();
+      }
+    };
+    requestAnimationFrame(tick);
+  }
+
+  updateUnfoldButtons() {
+    const hasUnfold = !!this.unfoldManager.unfoldGroup;
+    const btnUnfold = document.getElementById('btn-unfold');
+    const btnFold = document.getElementById('btn-fold');
+    const slider = document.getElementById('unfold-slider');
+    if (btnUnfold) {
+      btnUnfold.disabled = !hasUnfold;
+      btnUnfold.classList.toggle('disabled', !hasUnfold);
+    }
+    if (btnFold) {
+      btnFold.disabled = !hasUnfold;
+      btnFold.classList.toggle('disabled', !hasUnfold);
+    }
+    if (slider) {
+      slider.disabled = !hasUnfold;
+      if (!hasUnfold) slider.value = 0;
+    }
+    if (!hasUnfold) {
+      const el = document.getElementById('unfold-value');
+      if (el) el.textContent = '0%';
+    }
+  }
+
   disposeGroup(group) {
     group.traverse(child => {
       // 清理 CSS2DObject 的 DOM 元素（顶点标签）
@@ -422,15 +492,29 @@ class SolidGeometryApp {
       btn.classList.add('active');
       if (hint) hint.style.display = 'block';
       if (container) container.style.display = 'block';
+      // 保存 OrbitControls 当前状态，只禁用平移，保留旋转和缩放
+      if (this.controls) {
+        this._savedControlsState = {
+          enablePan: this.controls.enablePan
+        };
+        this.controls.enablePan = false;
+      }
       this._bindCrossSectionEvents();
-      this.controls.enabled = false;
     } else {
       btn.textContent = '进入截面选点模式';
       btn.classList.remove('active');
       if (hint) hint.style.display = 'none';
       if (container) container.style.display = 'none';
       this._unbindCrossSectionEvents();
-      this.controls.enabled = true;
+      // 恢复 OrbitControls 平移状态
+      if (this.controls && this._savedControlsState) {
+        this.controls.enablePan = this._savedControlsState.enablePan;
+        this._savedControlsState = null;
+      }
+    }
+    // 确保几何体在截面模式下保持可见和可渲染
+    if (this.geometryGroup) {
+      this.geometryGroup.visible = true;
     }
   }
 
@@ -439,6 +523,8 @@ class SolidGeometryApp {
     const canvas = this.renderer.domElement;
     this._crossClickBound = (e) => {
       if (!this.crossSectionManager.isActive) return;
+      // 只响应左键选点，右键保留给 OrbitControls 旋转
+      if (e.button !== 0) return;
       this.crossSectionManager.handleClick(e);
     };
     this._crossMoveBound = (e) => {
@@ -510,6 +596,13 @@ class SolidGeometryApp {
     if (totalEl) totalEl.textContent = stats.total;
     if (correctEl) correctEl.textContent = stats.correct;
     if (accuracyEl) accuracyEl.textContent = `${stats.accuracy}%`;
+
+    // 更新错题统计（从记录管理器获取）
+    const recordStats = this.recordsManager.getStats();
+    const wrongCountEl = document.getElementById('wrong-count');
+    const wrongRateEl = document.getElementById('wrong-rate');
+    if (wrongCountEl) wrongCountEl.textContent = recordStats.wrongCount;
+    if (wrongRateEl) wrongRateEl.textContent = `${recordStats.wrongRate}%`;
   }
 
   show3DSolution(question, result) {
@@ -540,9 +633,19 @@ class SolidGeometryApp {
   updateRecordsList() {
     const container = document.getElementById('records-list');
     if (!container) return;
+
+    // 记录面板切换按钮
+    const wrongCount = this.recordsManager.getWrongRecords().length;
+    let toggleHTML = `
+      <div class="records-toggle" style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-sm btn-primary" id="btn-show-all-records" onclick="app.updateRecordsList()">练习记录</button>
+        <button class="btn btn-sm btn-outline" id="btn-show-wrong-records" onclick="app.showWrongRecords()">错题本${wrongCount > 0 ? ` (${wrongCount})` : ''}</button>
+      </div>
+    `;
+
     const records = this.recordsManager.getRecords();
     if (records.length === 0) {
-      container.innerHTML = `
+      container.innerHTML = toggleHTML + `
         <div class="empty-state">
           <div class="empty-state-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -555,7 +658,7 @@ class SolidGeometryApp {
       `;
       return;
     }
-    container.innerHTML = records.map((record, index) => `
+    container.innerHTML = toggleHTML + records.map((record, index) => `
       <div class="record-item">
         <div class="record-header">
           <span class="record-date">${this.formatRecordDate(record.date)}</span>
@@ -570,6 +673,61 @@ class SolidGeometryApp {
       </div>
     `).join('');
     this.updateRecordsStats();
+  }
+
+  showWrongRecords() {
+    const container = document.getElementById('records-list');
+    if (!container) return;
+
+    const wrongRecords = this.recordsManager.getWrongRecords();
+    const wrongCount = wrongRecords.length;
+    const totalRecords = this.recordsManager.getRecords().length;
+
+    let toggleHTML = `
+      <div class="records-toggle" style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-sm btn-outline" id="btn-show-all-records" onclick="app.updateRecordsList()">练习记录${totalRecords > 0 ? ` (${totalRecords})` : ''}</button>
+        <button class="btn btn-sm btn-primary" id="btn-show-wrong-records" onclick="app.showWrongRecords()">错题本${wrongCount > 0 ? ` (${wrongCount})` : ''}</button>
+      </div>
+    `;
+
+    if (wrongRecords.length === 0) {
+      container.innerHTML = toggleHTML + `
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
+            </svg>
+          </div>
+          <div class="empty-state-title">错题本为空</div>
+          <div class="empty-state-text">答错的题目会自动记录在此</div>
+        </div>
+      `;
+      return;
+    }
+
+    const difficultyNames = { easy: '简单', medium: '中等', hard: '困难' };
+    container.innerHTML = toggleHTML + wrongRecords.map((record, index) => `
+      <div class="record-item" style="border-left:3px solid var(--md-error,#e53935)">
+        <div class="record-header">
+          <span class="record-date">${this.formatRecordDate(record.timestamp)}</span>
+          <span class="record-accuracy" style="background:var(--md-error-container,#fce4ec);color:var(--md-error,#e53935)">${difficultyNames[record.difficulty] || record.difficulty || '-'}</span>
+        </div>
+        <div class="record-detail" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <span style="font-weight:500">${record.question}</span>
+          <span style="color:var(--md-error,#e53935)">你的答案：${record.userAnswer}</span>
+          <span style="color:var(--md-primary,#1976d2)">正确答案：${record.correctAnswer}</span>
+          ${record.geometryType ? `<span style="color:var(--md-on-surface-variant,#666)">几何体：${this.getGeometryName(record.geometryType)}</span>` : ''}
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="app.deleteWrongRecord(${index})">移除</button>
+      </div>
+    `).join('');
+  }
+
+  deleteWrongRecord(index) {
+    if (this.recordsManager.deleteWrongRecord(index)) {
+      this.showToast('已从错题本移除', 'success');
+      this.showWrongRecords();
+    }
   }
 
   formatRecordDate(dateString) {
@@ -684,6 +842,42 @@ class SolidGeometryApp {
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);
+    this.updateLabelsVisibility();
+  }
+
+  updateLabelsVisibility() {
+    if (!this.geometryGroup) return;
+    const distance = this.camera.position.length();
+
+    // 坐标标签：设置开启时，距离<5时显示
+    const coordGroup = this.geometryGroup.getObjectByName('coordLabels');
+    if (coordGroup) {
+      const settingOn = !!this.settingsManager?.getSetting('showCoordInfo');
+      const show = settingOn && distance < 5;
+      coordGroup.visible = show;
+      coordGroup.children.forEach(label => {
+        label.visible = show;
+        if (label.isCSS2DObject) {
+          const scale = Math.max(0.5, Math.min(1.5, 5 / distance));
+          label.element.style.fontSize = `${10 * scale}px`;
+        }
+      });
+    }
+
+    // 棱长标签：设置开启时，距离<4时显示
+    const lengthGroup = this.geometryGroup.getObjectByName('edgeLengthLabels');
+    if (lengthGroup) {
+      const settingOn = !!this.settingsManager?.getSetting('showEdgeLength');
+      const show = settingOn && distance < 4;
+      lengthGroup.visible = show;
+      lengthGroup.children.forEach(label => {
+        label.visible = show;
+        if (label.isCSS2DObject) {
+          const scale = Math.max(0.5, Math.min(1.5, 4 / distance));
+          label.element.style.fontSize = `${10 * scale}px`;
+        }
+      });
+    }
   }
 
   onWindowResize() {
@@ -719,122 +913,415 @@ class SolidGeometryApp {
 
   // ==================== 设置功能 ====================
   showSettings() {
-    const existing = document.querySelector('.settings-overlay');
-    if (existing) existing.remove();
-    const overlay = document.createElement('div');
-    overlay.className = 'settings-overlay';
-    overlay.innerHTML = `
-      <div class="settings-panel">
-        <div class="settings-header">
-          <h3>⚙️ 设置</h3>
-          <button class="btn btn-ghost btn-icon btn-sm" id="close-settings">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-        <div class="settings-body">
-          <div class="settings-group">
-            <div class="settings-group-title">显示</div>
-            <div class="settings-item">
-              <div><div class="settings-item-label">网格</div><div class="settings-item-desc">显示/隐藏地面网格</div></div>
-              <div class="switch ${this.sceneManager?.gridVisible ? 'active' : ''}" id="setting-grid"></div>
-            </div>
-            <div class="settings-item">
-              <div><div class="settings-item-label">坐标轴</div><div class="settings-item-desc">显示/隐藏XYZ坐标轴</div></div>
-              <div class="switch ${this.sceneManager?.axesVisible ? 'active' : ''}" id="setting-axes"></div>
-            </div>
-          </div>
-          <div class="settings-group">
-            <div class="settings-group-title">几何体</div>
-            <div class="settings-item">
-              <div><div class="settings-item-label">透明度</div><div class="settings-item-desc">调整面的透明程度</div></div>
-              <input type="range" class="slider" id="setting-opacity" min="0" max="1" step="0.05" value="0.6" style="width:120px">
-            </div>
-            <div class="settings-item">
-              <div><div class="settings-item-label">显示标签</div><div class="settings-item-desc">顶点名称标签</div></div>
-              <div class="switch active" id="setting-labels"></div>
-            </div>
-          </div>
-          <div class="settings-group">
-            <div class="settings-group-title">练习</div>
-            <div class="settings-item">
-              <div><div class="settings-item-label">默认题数</div><div class="settings-item-desc">每次练习的题目数量</div></div>
-              <select class="select" id="setting-default-count" style="width:80px">
-                <option value="3">3题</option>
-                <option value="5" selected>5题</option>
-                <option value="10">10题</option>
-                <option value="15">15题</option>
-              </select>
-            </div>
-          </div>
-          <div class="settings-group">
-            <div class="settings-group-title">关于</div>
-            <div class="settings-item">
-              <div><div class="settings-item-label">立体几何练习平台</div><div class="settings-item-desc">版本 1.0 · 基于 Three.js</div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    overlay.querySelector('#close-settings').addEventListener('click', () => overlay.remove());
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector('#setting-grid')?.addEventListener('click', (e) => {
-      this.sceneManager.toggleGrid();
-      e.currentTarget.classList.toggle('active');
-    });
-    overlay.querySelector('#setting-axes')?.addEventListener('click', (e) => {
-      this.sceneManager.toggleAxes();
-      e.currentTarget.classList.toggle('active');
-    });
-    overlay.querySelector('#setting-opacity')?.addEventListener('input', (e) => {
-      this.setOpacity(parseFloat(e.target.value));
-    });
-    overlay.querySelector('#setting-labels')?.addEventListener('click', (e) => {
-      e.currentTarget.classList.toggle('active');
-      const visible = e.currentTarget.classList.contains('active');
-      if (this.geometryGroup) {
-        this.geometryGroup.traverse(child => {
-          if (child.isCSS2DObject || child.userData?.isLabel) child.visible = visible;
-        });
+    this.settingsManager.show();
+  }
+
+  // ==================== 设置应用 ====================
+  _applySettings(settings) {
+    // 网格
+    this.sceneManager.setGridVisible(settings.showGrid);
+    // 坐标轴
+    this.sceneManager.setAxesVisible(settings.showAxes);
+    // 标签
+    this._applyLabelsVisibility(settings.showLabels);
+    // 坐标信息
+    this._applyChildGroupVisibility('coordLabels', settings.showCoordInfo);
+    // 边长
+    this._applyChildGroupVisibility('edgeLengthLabels', settings.showEdgeLength);
+    // 动画速度
+    if (this.unfoldManager) {
+      this.unfoldManager.animationSpeed = settings.animationSpeed;
+    }
+    // 相机灵敏度
+    if (this.controls) {
+      this.controls.rotateSpeed = settings.cameraSensitivity;
+    }
+    // 自动旋转
+    if (this.controls) {
+      this.controls.autoRotate = settings.autoRotate;
+      this.controls.autoRotateSpeed = 2.0;
+    }
+    // 同步工具栏按钮状态
+    const gridBtn = document.getElementById('btn-grid');
+    if (gridBtn) gridBtn.classList.toggle('active', settings.showGrid);
+    const axesBtn = document.getElementById('btn-axes');
+    if (axesBtn) axesBtn.classList.toggle('active', settings.showAxes);
+  }
+
+  _applyLabelsVisibility(visible) {
+    this.scene.traverse(child => {
+      if (child.isCSS2DObject && child.userData?.isLabel) {
+        child.visible = visible;
       }
     });
   }
 
-  // ==================== 随机生成几何体 ====================
-  randomGeometry() {
-    const types = Object.keys(GEOMETRY_CONFIGS);
-    let available = types.filter(t => t !== this.currentGeometryType);
-    if (available.length === 0) available = types;
-    const randomType = available[Math.floor(Math.random() * available.length)];
-    this.createGeometry(randomType);
-    this.showToast(`🎲 随机：${GEOMETRY_NAMES[randomType] || randomType}`, 'info');
+  _applyChildGroupVisibility(groupName, visible) {
+    this.scene.traverse(child => {
+      if (child.name === groupName) {
+        child.visible = visible;
+        child.children.forEach(c => { c.visible = visible; });
+      }
+    });
+  }
+
+  _addCoordinateLabels(group, config) {
+    if (config.type === 'curved') return;
+    const coordGroup = new THREE.Group();
+    coordGroup.name = 'coordLabels';
+    const vertices = this.geometryFactory.currentVertices;
+    Object.entries(vertices).forEach(([name, pos]) => {
+      const div = document.createElement('div');
+      div.className = 'coord-label';
+      div.textContent = `${name}(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})`;
+      div.className = 'coord-label';
+      const label = new CSS2DObject(div);
+      label.position.copy(pos);
+      label.position.y -= 0.2;
+      coordGroup.add(label);
+    });
+    coordGroup.visible = this.settingsManager?.getSetting('showCoordInfo') || false;
+    group.add(coordGroup);
+  }
+
+  _addEdgeLengthLabels(group, config) {
+    if (config.type === 'curved' || !config.edges) return;
+    const lengthGroup = new THREE.Group();
+    lengthGroup.name = 'edgeLengthLabels';
+    const vertices = this.geometryFactory.currentVertices;
+    config.edges.forEach(([start, end]) => {
+      const v1 = vertices[start];
+      const v2 = vertices[end];
+      if (!v1 || !v2) return;
+      const mid = v1.clone().add(v2).multiplyScalar(0.5);
+      const length = v1.distanceTo(v2);
+      const div = document.createElement('div');
+      div.className = 'edge-length-label';
+      div.textContent = `${start}${end} = ${length.toFixed(2)}`;
+      div.className = 'edge-length-label';
+      const label = new CSS2DObject(div);
+      label.position.copy(mid);
+      lengthGroup.add(label);
+    });
+    lengthGroup.visible = this.settingsManager?.getSetting('showEdgeLength') || false;
+    group.add(lengthGroup);
+  }
+
+  // ==================== 随机生成几何体并开始练习 ====================
+  randomGeometry(preferredType = null) {
+    let targetType;
+    if (preferredType && GEOMETRY_CONFIGS[preferredType]) {
+      targetType = preferredType;
+    } else {
+      const types = Object.keys(GEOMETRY_CONFIGS);
+      let available = types.filter(t => t !== this.currentGeometryType);
+      if (available.length === 0) available = types;
+      targetType = available[Math.floor(Math.random() * available.length)];
+    }
+    this.createGeometry(targetType);
+
+    // 切换到练习tab并自动开始练习
+    this.switchTab('practice');
+    this.startPracticeWithGeometry(targetType);
+  }
+
+  // 使用当前选中的几何体开始练习（尊重用户选择）
+  startPracticeWithCurrentGeometry() {
+    const type = this.currentGeometryType || 'cube';
+    this.switchTab('practice');
+    this.startPracticeWithGeometry(type);
+  }
+
+  // 使用指定几何体开始练习（通用辅助方法）
+  startPracticeWithGeometry(geometryType) {
+    const difficulty = document.getElementById('difficulty-level')?.value || 'mixed';
+    const knowledgeSelect = document.getElementById('knowledge-filter');
+    const selectedKnowledge = knowledgeSelect
+      ? Array.from(knowledgeSelect.selectedOptions).map(o => o.value).filter(v => v)
+      : [];
+
+    // 关闭已有的练习总结浮层
+    const summaryOverlay = document.querySelector('.practice-summary-overlay');
+    if (summaryOverlay) summaryOverlay.remove();
+
+    this.practiceManager.startPractice({
+      type: 'mixed',
+      difficulty,
+      knowledge: selectedKnowledge,
+      geometryType
+    });
+
+    this.practiceStatsManager.loadFromStorage();
+    this.practiceStatsManager.startSession(geometryType);
+
+    const centerArea = document.querySelector('.center-area');
+    if (centerArea) centerArea.classList.add('practice-active');
+    this.rendererManager.switchContainer('canvas-wrapper-practice');
+
+    this.showCurrentQuestion();
+    this.showToast(`🎲 随机几何体练习：${GEOMETRY_NAMES[geometryType] || geometryType}`, 'success');
   }
 
   // ==================== 编辑功能 ====================
-  showEditDialog() {
-    if (!this.currentGeometryType) {
-      this.showToast('请先选择一个几何体', 'warning');
-      return;
+  _getEditableParams(type) {
+    const defs = {
+      cube: [{ key: 'size', label: '边长', min: 0.5, max: 3, step: 0.1 }],
+      rectangularBox: [
+        { key: 'width', label: '长', min: 0.5, max: 3, step: 0.1 },
+        { key: 'height', label: '高', min: 0.5, max: 3, step: 0.1 },
+        { key: 'depth', label: '宽', min: 0.5, max: 3, step: 0.1 }
+      ],
+      triangularPrism: [
+        { key: 'radius', label: '底面半径', min: 0.5, max: 3, step: 0.1 },
+        { key: 'height', label: '高', min: 0.5, max: 3, step: 0.1 }
+      ],
+      tetrahedron: [{ key: 'radius', label: '边长', min: 0.5, max: 3, step: 0.1 }],
+      squarePyramid: [
+        { key: 'baseSize', label: '底面边长', min: 0.5, max: 3, step: 0.1 },
+        { key: 'height', label: '高', min: 0.5, max: 3, step: 0.1 }
+      ],
+      hexagonalPrism: [
+        { key: 'radius', label: '底面半径', min: 0.5, max: 3, step: 0.1 },
+        { key: 'height', label: '高', min: 0.5, max: 3, step: 0.1 }
+      ],
+      triangularPyramid: [
+        { key: 'baseRadius', label: '底面半径', min: 0.5, max: 3, step: 0.1 },
+        { key: 'height', label: '高', min: 0.5, max: 3, step: 0.1 }
+      ],
+      cylinder: [
+        { key: 'radius', label: '底面半径', min: 0.5, max: 3, step: 0.1 },
+        { key: 'height', label: '高', min: 0.5, max: 3, step: 0.1 }
+      ],
+      cone: [
+        { key: 'radius', label: '底面半径', min: 0.5, max: 3, step: 0.1 },
+        { key: 'height', label: '高', min: 0.5, max: 3, step: 0.1 }
+      ],
+      sphere: [{ key: 'radius', label: '半径', min: 0.5, max: 3, step: 0.1 }]
+    };
+    return defs[type] || [];
+  }
+
+  _computeDihedralAngles(config) {
+    if (!config.faces || !config.edges || config.type === 'curved') return [];
+    const verts = {};
+    Object.entries(config.vertices).forEach(([n, p]) => { verts[n] = new THREE.Vector3(p[0], p[1], p[2]); });
+    const centroid = new THREE.Vector3();
+    Object.values(verts).forEach(v => centroid.add(v));
+    centroid.divideScalar(Object.values(verts).length);
+
+    const getNormal = (faceVerts) => {
+      const a = faceVerts[0], b = faceVerts[1], c = faceVerts[2];
+      const n = new THREE.Vector3().crossVectors(b.clone().sub(a), c.clone().sub(a)).normalize();
+      const fc = new THREE.Vector3();
+      faceVerts.forEach(v => fc.add(v));
+      fc.divideScalar(faceVerts.length);
+      if (n.dot(fc.clone().sub(centroid)) < 0) n.negate();
+      return n;
+    };
+
+    const faceList = Object.entries(config.faces)
+      .filter(([, v]) => Array.isArray(v))
+      .map(([name, vn]) => ({ name, verts: vn.map(n => verts[n]).filter(Boolean) }));
+
+    const angles = [];
+    config.edges.forEach(([sn, en]) => {
+      const adj = faceList.filter(f => f.verts.some(v => v.equals(verts[sn])) && f.verts.some(v => v.equals(verts[en])));
+      if (adj.length < 2) return;
+      const [f1, f2] = adj;
+      const n1 = getNormal(f1.verts), n2 = getNormal(f2.verts);
+      const edgeDir = verts[en].clone().sub(verts[sn]).normalize();
+      const p1 = n1.clone().sub(edgeDir.clone().multiplyScalar(n1.dot(edgeDir))).normalize();
+      const p2 = n2.clone().sub(edgeDir.clone().multiplyScalar(n2.dot(edgeDir))).normalize();
+      let angle = Math.acos(Math.max(-1, Math.min(1, p1.dot(p2))));
+      if (new THREE.Vector3().crossVectors(p1, p2).dot(edgeDir) < 0) angle = 2 * Math.PI - angle;
+      angles.push({ edge: `${sn}${en}`, faces: [f1.name, f2.name], angle: angle * 180 / Math.PI });
+    });
+    return angles;
+  }
+
+  _updateVertexCoords(type, newVertices) {
+    const config = GEOMETRY_CONFIGS[type];
+    if (!config) return;
+    Object.entries(config.vertices).forEach(([name]) => {
+      if (newVertices[name]) config.vertices[name] = [...newVertices[name]];
+    });
+    this.createGeometry(type);
+    const overlay = document.querySelector('.settings-overlay');
+    if (overlay) {
+      overlay.querySelectorAll('.vertex-coord-input').forEach(input => {
+        const vn = input.dataset.vertex, axis = input.dataset.axis;
+        input.value = parseFloat(config.vertices[vn][axis]).toFixed(2);
+      });
     }
-    const config = GEOMETRY_CONFIGS[this.currentGeometryType];
-    const name = GEOMETRY_NAMES[this.currentGeometryType] || this.currentGeometryType;
+  }
+
+  _onAngleChange(type, angles) {
+    const config = GEOMETRY_CONFIGS[type];
+    if (!config || !config.vertices) return;
+    const verts = {};
+    Object.entries(config.vertices).forEach(([n, p]) => { verts[n] = new THREE.Vector3(p[0], p[1], p[2]); });
+    const centroid = new THREE.Vector3();
+    Object.values(verts).forEach(v => centroid.add(v));
+    centroid.divideScalar(Object.values(verts).length);
+
+    angles.forEach((angleData, i) => {
+      const slider = document.getElementById(`angle-slider-${i}`);
+      if (!slider) return;
+      const newAngle = parseFloat(slider.value);
+      const diff = (newAngle - angleData.angle) * Math.PI / 180;
+      const [sn, en] = angleData.edge.split('');
+      const edgeDir = verts[en].clone().sub(verts[sn]).normalize();
+      const rotationAxis = edgeDir;
+      const affectedFaces = Object.entries(config.faces).filter(([, vn]) => Array.isArray(vn) && vn.includes(sn) && vn.includes(en));
+      if (affectedFaces.length === 0) return;
+      const affectedVerts = new Set();
+      affectedFaces.forEach(([, vn]) => vn.forEach(n => affectedVerts.add(n)));
+      affectedVerts.delete(sn);
+      affectedVerts.delete(en);
+      const rotMatrix = new THREE.Matrix4().makeRotationAxis(rotationAxis, diff);
+      affectedVerts.forEach(vn => {
+        const v = verts[vn].clone().sub(centroid);
+        v.applyMatrix4(rotMatrix);
+        v.add(centroid);
+        config.vertices[vn] = [parseFloat(v.x.toFixed(3)), parseFloat(v.y.toFixed(3)), parseFloat(v.z.toFixed(3))];
+      });
+    });
+    this.createGeometry(type);
+    this._refreshEditDialog();
+  }
+
+  _refreshEditDialog() {
+    const overlay = document.querySelector('.settings-overlay');
+    if (!overlay) return;
+    const type = this.currentGeometryType;
+    const config = GEOMETRY_CONFIGS[type];
+    if (!config) return;
+    const paramsSection = overlay.querySelector('#edit-params-section');
+    if (paramsSection) {
+      const defs = this._getEditableParams(type);
+      paramsSection.innerHTML = defs.map(d =>
+        `<div class="settings-item" style="flex-direction:column;align-items:stretch;gap:4px">
+          <div style="display:flex;justify-content:space-between"><span class="settings-item-label">${d.label}</span><span class="settings-item-value" id="param-val-${d.key}">${(config.defaultParams[d.key] || 0).toFixed(1)}</span></div>
+          <input type="range" id="param-${d.key}" min="${d.min}" max="${d.max}" step="${d.step}" value="${config.defaultParams[d.key] || 1}" style="width:100%;accent-color:var(--md-primary)">
+        </div>`
+      ).join('');
+      defs.forEach(d => {
+        document.getElementById(`param-${d.key}`)?.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          GEOMETRY_CONFIGS[type].defaultParams[d.key] = val;
+          document.getElementById(`param-val-${d.key}`).textContent = val.toFixed(1);
+          this.createGeometry(type);
+          this._refreshEditDialog();
+        });
+      });
+    }
+    const anglesSection = overlay.querySelector('#edit-angles-section');
+    if (anglesSection) {
+      const angles = this._computeDihedralAngles(config);
+      if (angles.length) {
+        anglesSection.innerHTML = angles.map((a, i) =>
+          `<div class="settings-item" style="flex-direction:column;align-items:stretch;gap:4px">
+            <div style="display:flex;justify-content:space-between"><span class="settings-item-label">∠${a.edge}（${a.faces[0]}-${a.faces[1]}）</span><span class="settings-item-value" id="angle-val-${i}">${a.angle.toFixed(1)}°</span></div>
+            <input type="range" id="angle-slider-${i}" min="0" max="180" step="0.5" value="${a.angle}" style="width:100%;accent-color:var(--md-primary)">
+          </div>`
+        ).join('');
+        angles.forEach((_, i) => {
+          document.getElementById(`angle-slider-${i}`)?.addEventListener('input', (e) => {
+            document.getElementById(`angle-val-${i}`).textContent = `${parseFloat(e.target.value).toFixed(1)}°`;
+          });
+          document.getElementById(`angle-slider-${i}`)?.addEventListener('change', () => {
+            this._onAngleChange(type, angles);
+          });
+        });
+      } else {
+        anglesSection.innerHTML = '<div style="font-size:12px;color:var(--md-on-surface-variant)">无可调二面角</div>';
+      }
+    }
+    const coordsSection = overlay.querySelector('#edit-coords-section');
+    if (coordsSection && config.vertices && Object.keys(config.vertices).length) {
+      const verts = config.vertices;
+      coordsSection.innerHTML = Object.entries(verts).map(([name, pos]) =>
+        `<div class="settings-item" style="flex-direction:column;align-items:stretch;gap:4px">
+          <div class="settings-item-label" style="font-weight:500">顶点 ${name}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="font-size:12px;color:var(--md-on-surface-variant)">X</label><input type="number" class="vertex-coord-input" data-vertex="${name}" data-axis="0" value="${pos[0].toFixed(2)}" step="0.1" style="width:60px;padding:4px;border:1px solid var(--md-outline-variant);border-radius:6px;font-size:12px;background:var(--md-surface);color:var(--md-on-surface)">
+            <label style="font-size:12px;color:var(--md-on-surface-variant)">Y</label><input type="number" class="vertex-coord-input" data-vertex="${name}" data-axis="1" value="${pos[1].toFixed(2)}" step="0.1" style="width:60px;padding:4px;border:1px solid var(--md-outline-variant);border-radius:6px;font-size:12px;background:var(--md-surface);color:var(--md-on-surface)">
+            <label style="font-size:12px;color:var(--md-on-surface-variant)">Z</label><input type="number" class="vertex-coord-input" data-vertex="${name}" data-axis="2" value="${pos[2].toFixed(2)}" step="0.1" style="width:60px;padding:4px;border:1px solid var(--md-outline-variant);border-radius:6px;font-size:12px;background:var(--md-surface);color:var(--md-on-surface)">
+          </div>
+        </div>`
+      ).join('');
+      coordsSection.querySelectorAll('.vertex-coord-input').forEach(input => {
+        input.addEventListener('change', () => {
+          const vn = input.dataset.vertex, axis = parseInt(input.dataset.axis);
+          const newVerts = {};
+          Object.entries(config.vertices).forEach(([n, p]) => { newVerts[n] = [...p]; });
+          newVerts[vn][axis] = parseFloat(input.value);
+          this._updateVertexCoords(type, newVerts);
+        });
+      });
+    }
+  }
+
+  showEditDialog() {
+    if (!this.currentGeometryType) { this.showToast('请先选择一个几何体', 'warning'); return; }
+    const type = this.currentGeometryType;
+    const config = GEOMETRY_CONFIGS[type];
+    const name = GEOMETRY_NAMES[type] || type;
     const existing = document.querySelector('.settings-overlay');
     if (existing) existing.remove();
+
+    const defs = this._getEditableParams(type);
+    const angles = this._computeDihedralAngles(config);
+    const hasVerts = config.vertices && Object.keys(config.vertices).length > 0;
+
+    const paramHTML = defs.map(d =>
+      `<div class="settings-item" style="flex-direction:column;align-items:stretch;gap:4px">
+        <div style="display:flex;justify-content:space-between"><span class="settings-item-label">${d.label}</span><span class="settings-item-value" id="param-val-${d.key}">${(config.defaultParams[d.key] || 0).toFixed(1)}</span></div>
+        <input type="range" id="param-${d.key}" min="${d.min}" max="${d.max}" step="${d.step}" value="${config.defaultParams[d.key] || 1}" style="width:100%;accent-color:var(--md-primary)">
+      </div>`
+    ).join('');
+
+    const angleHTML = angles.length ? angles.map((a, i) =>
+      `<div class="settings-item" style="flex-direction:column;align-items:stretch;gap:4px">
+        <div style="display:flex;justify-content:space-between"><span class="settings-item-label">∠${a.edge}（${a.faces[0]}-${a.faces[1]}）</span><span class="settings-item-value" id="angle-val-${i}">${a.angle.toFixed(1)}°</span></div>
+        <input type="range" id="angle-slider-${i}" min="0" max="180" step="0.5" value="${a.angle}" style="width:100%;accent-color:var(--md-primary)">
+      </div>`
+    ).join('') : '<div style="font-size:12px;color:var(--md-on-surface-variant)">无可调二面角</div>';
+
+    const coordHTML = hasVerts ? Object.entries(config.vertices).map(([vname, pos]) =>
+      `<div class="settings-item" style="flex-direction:column;align-items:stretch;gap:4px">
+        <div class="settings-item-label" style="font-weight:500">顶点 ${vname}</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="font-size:12px;color:var(--md-on-surface-variant)">X</label><input type="number" class="vertex-coord-input" data-vertex="${vname}" data-axis="0" value="${pos[0].toFixed(2)}" step="0.1" style="width:60px;padding:4px;border:1px solid var(--md-outline-variant);border-radius:6px;font-size:12px;background:var(--md-surface);color:var(--md-on-surface)">
+          <label style="font-size:12px;color:var(--md-on-surface-variant)">Y</label><input type="number" class="vertex-coord-input" data-vertex="${vname}" data-axis="1" value="${pos[1].toFixed(2)}" step="0.1" style="width:60px;padding:4px;border:1px solid var(--md-outline-variant);border-radius:6px;font-size:12px;background:var(--md-surface);color:var(--md-on-surface)">
+          <label style="font-size:12px;color:var(--md-on-surface-variant)">Z</label><input type="number" class="vertex-coord-input" data-vertex="${vname}" data-axis="2" value="${pos[2].toFixed(2)}" step="0.1" style="width:60px;padding:4px;border:1px solid var(--md-outline-variant);border-radius:6px;font-size:12px;background:var(--md-surface);color:var(--md-on-surface)">
+        </div>
+      </div>`
+    ).join('') : '<div style="font-size:12px;color:var(--md-on-surface-variant)">曲面体无顶点坐标</div>';
+
     const overlay = document.createElement('div');
     overlay.className = 'settings-overlay';
     overlay.innerHTML = `
       <div class="settings-panel">
         <div class="settings-header">
-          <h3>✏️ 编辑 · ${name}</h3>
+          <h3>编辑 · ${name}</h3>
           <button class="btn btn-ghost btn-icon btn-sm" id="close-edit">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         <div class="settings-body">
+          <div class="settings-group">
+            <div class="settings-group-title">几何体参数</div>
+            <div id="edit-params-section">${paramHTML}</div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">角度调整</div>
+            <div id="edit-angles-section">${angleHTML}</div>
+          </div>
+          <div class="settings-group">
+            <div class="settings-group-title">坐标显示</div>
+            <div id="edit-coords-section">${coordHTML}</div>
+          </div>
           <div class="settings-group">
             <div class="settings-group-title">显示控制</div>
             <div class="settings-item"><div class="settings-item-label">显示面</div><div class="switch active" id="edit-faces"></div></div>
@@ -856,47 +1343,98 @@ class SolidGeometryApp {
               <div>类型：${config.type === 'curved' ? '曲面' : '多面体'}</div>
             </div>
           </div>
+          <div style="padding:8px 0"><button class="btn btn-outline" id="btn-reset-params" style="width:100%">重置为默认值</button></div>
         </div>
       </div>
     `;
     document.body.appendChild(overlay);
+
+    // 关闭
     overlay.querySelector('#close-edit').addEventListener('click', () => overlay.remove());
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-    const toggleChild = (name, visible) => {
+
+    // 参数滑块
+    defs.forEach(d => {
+      document.getElementById(`param-${d.key}`)?.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        GEOMETRY_CONFIGS[type].defaultParams[d.key] = val;
+        document.getElementById(`param-val-${d.key}`).textContent = val.toFixed(1);
+        this.createGeometry(type);
+        this._refreshEditDialog();
+      });
+    });
+
+    // 二面角滑块
+    angles.forEach((_, i) => {
+      document.getElementById(`angle-slider-${i}`)?.addEventListener('input', (e) => {
+        document.getElementById(`angle-val-${i}`).textContent = `${parseFloat(e.target.value).toFixed(1)}°`;
+      });
+      document.getElementById(`angle-slider-${i}`)?.addEventListener('change', () => {
+        this._onAngleChange(type, angles);
+      });
+    });
+
+    // 顶点坐标输入
+    overlay.querySelectorAll('.vertex-coord-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const vn = input.dataset.vertex, axis = parseInt(input.dataset.axis);
+        const newVerts = {};
+        Object.entries(config.vertices).forEach(([n, p]) => { newVerts[n] = [...p]; });
+        newVerts[vn][axis] = parseFloat(input.value);
+        this._updateVertexCoords(type, newVerts);
+      });
+    });
+
+    // 显示控制开关
+    const toggleChild = (childName, visible) => {
       if (!this.geometryGroup) return;
       this.geometryGroup.children.forEach(child => {
-        if (child.name === name || (name === 'labels' && (child.isCSS2DObject || child.userData?.isLabel))) {
+        if (child.name === childName || (childName === 'labels' && (child.isCSS2DObject || child.userData?.isLabel))) {
           child.visible = visible;
         }
       });
     };
-    overlay.querySelector('#edit-faces')?.addEventListener('click', (e) => {
-      e.currentTarget.classList.toggle('active');
-      toggleChild('faces', e.currentTarget.classList.contains('active'));
-    });
-    overlay.querySelector('#edit-edges')?.addEventListener('click', (e) => {
-      e.currentTarget.classList.toggle('active');
-      toggleChild('edges', e.currentTarget.classList.contains('active'));
-    });
-    overlay.querySelector('#edit-vertices')?.addEventListener('click', (e) => {
-      e.currentTarget.classList.toggle('active');
-      toggleChild('vertices', e.currentTarget.classList.contains('active'));
-    });
-    overlay.querySelector('#edit-labels')?.addEventListener('click', (e) => {
-      e.currentTarget.classList.toggle('active');
-      toggleChild('labels', e.currentTarget.classList.contains('active'));
-    });
+    overlay.querySelector('#edit-faces')?.addEventListener('click', (e) => { e.currentTarget.classList.toggle('active'); toggleChild('faces', e.currentTarget.classList.contains('active')); });
+    overlay.querySelector('#edit-edges')?.addEventListener('click', (e) => { e.currentTarget.classList.toggle('active'); toggleChild('edges', e.currentTarget.classList.contains('active')); });
+    overlay.querySelector('#edit-vertices')?.addEventListener('click', (e) => { e.currentTarget.classList.toggle('active'); toggleChild('vertices', e.currentTarget.classList.contains('active')); });
+    overlay.querySelector('#edit-labels')?.addEventListener('click', (e) => { e.currentTarget.classList.toggle('active'); toggleChild('labels', e.currentTarget.classList.contains('active')); });
+
+    // 颜色
     overlay.querySelector('#edit-face-color')?.addEventListener('input', (e) => {
       if (!this.geometryGroup) return;
-      this.geometryGroup.traverse(child => {
-        if (child.isMesh && !child.material.wireframe) child.material.color.set(e.target.value);
-      });
+      this.geometryGroup.traverse(child => { if (child.isMesh && !child.material.wireframe) child.material.color.set(e.target.value); });
     });
     overlay.querySelector('#edit-edge-color')?.addEventListener('input', (e) => {
       if (!this.geometryGroup) return;
-      this.geometryGroup.traverse(child => {
-        if (child.isLineSegments) child.material.color.set(e.target.value);
+      this.geometryGroup.traverse(child => { if (child.isLineSegments) child.material.color.set(e.target.value); });
+    });
+
+    // 重置按钮
+    overlay.querySelector('#btn-reset-params')?.addEventListener('click', () => {
+      const origConfig = GEOMETRY_CONFIGS[type];
+      const origDefs = this._getEditableParams(type);
+      origDefs.forEach(d => {
+        const origVal = { cube: { size: 1 }, rectangularBox: { width: 1.5, height: 1, depth: 1 },
+          triangularPrism: { radius: 1, height: 1.5 }, tetrahedron: { radius: 1 },
+          squarePyramid: { baseSize: 1.5, height: 1.5 }, hexagonalPrism: { radius: 1, height: 1.5 },
+          triangularPyramid: { baseRadius: 1, height: 1.5 }, cylinder: { radius: 1, height: 2 },
+          cone: { radius: 1, height: 2 }, sphere: { radius: 1 }
+        }[type]?.[d.key] || 1;
+        origConfig.defaultParams[d.key] = origVal;
       });
+      // 恢复原始顶点
+      const origVerts = { cube: { A: [0,0,0], B: [1,0,0], C: [1,1,0], D: [0,1,0], E: [0,0,1], F: [1,0,1], G: [1,1,1], H: [0,1,1] },
+        rectangularBox: { A: [0,0,0], B: [1.5,0,0], C: [1.5,1,0], D: [0,1,0], E: [0,0,1], F: [1.5,0,1], G: [1.5,1,1], H: [0,1,1] },
+        tetrahedron: { A: [0,0,0], B: [1,0,0], C: [0.5,0.866,0], D: [0.5,0.289,0.816] },
+        triangularPyramid: { A: [0,0,0], B: [1,0,0], C: [0.5,0.866,0], D: [0.5,0.289,1.5] },
+        squarePyramid: { A: [0,0,0], B: [1.5,0,0], C: [1.5,0,1.5], D: [0,0,1.5], E: [0.75,1.5,0.75] }
+      }[type];
+      if (origVerts && origConfig.vertices) {
+        Object.entries(origVerts).forEach(([n, p]) => { if (origConfig.vertices[n]) origConfig.vertices[n] = [...p]; });
+      }
+      this.createGeometry(type);
+      this._refreshEditDialog();
+      this.showToast('已重置为默认值', 'success');
     });
   }
 
@@ -1018,6 +1556,13 @@ class SolidGeometryApp {
       ? Array.from(knowledgeSelect.selectedOptions).map(o => o.value).filter(v => v)
       : [];
 
+    // 随机几何体练习模式：选择随机几何体后开始练习
+    if (mode === 'randomGeometry') {
+      const selectedType = document.getElementById('geometry-type')?.value;
+      this.randomGeometry(selectedType);
+      return;
+    }
+
     this.practiceManager.startPractice({
       type: mode === 'random' ? 'random' : 'mixed',
       difficulty,
@@ -1042,8 +1587,24 @@ class SolidGeometryApp {
     const question = this.practiceManager.currentQuestion;
     if (!question) return;
 
+    // 根据题目geometry字段自动切换几何体
+    if (question.geometry) {
+      let targetType = question.geometry;
+      // 如果geometry不是已知type，则当作中文名转换
+      if (!GEOMETRY_CONFIGS[targetType]) {
+        targetType = this.getGeometryTypeFromName(question.geometry);
+      }
+      if (targetType && targetType !== this.currentGeometryType) {
+        this.createGeometry(targetType);
+      }
+    }
+
     const container = document.getElementById('question-container');
     if (!container) return;
+
+    // 隐藏空状态
+    const emptyState = document.getElementById('question-empty-state');
+    if (emptyState) emptyState.style.display = 'none';
 
     const questionNumber = this.practiceManager.stats.total + 1;
     let answerHTML;
@@ -1126,6 +1687,18 @@ class SolidGeometryApp {
       result.isCorrect
     );
 
+    // 答错时自动记录错题
+    if (!result.isCorrect) {
+      this.recordsManager.addWrongRecord({
+        question: question.question || question.text || '',
+        userAnswer: String(userAnswer),
+        correctAnswer: String(result.correctAnswer),
+        geometryType: question.geometry || this.currentGeometryType,
+        difficulty: question.difficulty || 'medium',
+        questionId: question.id || ''
+      });
+    }
+
     this.showAnswerFeedback(result);
     this.updatePracticeStats();
 
@@ -1191,6 +1764,17 @@ class SolidGeometryApp {
     return names[type] || type;
   }
 
+  getGeometryTypeFromName(name) {
+    const nameToType = {
+      '正方体': 'cube', '长方体': 'rectangularBox', '三棱柱': 'triangularPrism',
+      '正六棱柱': 'hexagonalPrism', '六棱柱': 'hexagonalPrism',
+      '四棱锥': 'squarePyramid', '正四面体': 'tetrahedron',
+      '斜三棱锥': 'triangularPyramid', '三棱锥': 'triangularPyramid',
+      '圆柱': 'cylinder', '圆锥': 'cone', '球': 'sphere'
+    };
+    return nameToType[name] || null;
+  }
+
   showPracticeSummary() {
     const stats = this.practiceManager.getStats();
     const todayStats = this.practiceManager.getTodayStats();
@@ -1254,17 +1838,6 @@ class SolidGeometryApp {
     }
   }
 
-  randomQuestion() {
-    // 快速随机一题
-    this.practiceManager.startPractice({
-      type: 'random',
-      difficulty: 'mixed',
-      knowledge: [],
-      geometryType: 'mixed'
-    });
-    this.showCurrentQuestion();
-    this.showToast('🎲 随机题目已生成', 'info');
-  }
 }
 
 // 启动应用

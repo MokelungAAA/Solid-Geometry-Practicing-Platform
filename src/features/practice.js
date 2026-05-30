@@ -88,7 +88,7 @@ export class PracticeManager {
 
     let question;
     if (this.practiceConfig.type === 'random') {
-      question = this.questionBank.randomQuestion(this.answeredIds);
+      question = this.questionBank.randomQuestion(this.answeredIds, this.practiceConfig.difficulty);
     } else {
       question = this.questionBank.autoGenerateQuestion({
         type: this.practiceConfig.type,
@@ -132,14 +132,21 @@ export class PracticeManager {
 
     if (question.type === 'choice') {
       let correctIndex;
-      if (question.correctIndex !== undefined) {
-        correctIndex = question.correctIndex;
-      } else if (typeof question.correct === 'number') {
-        // 静态题库：correct 是数字索引
+      if (typeof question.correct === 'number') {
+        // correct 是数字索引
         correctIndex = question.correct;
+      } else if (question.correctIndex !== undefined) {
+        correctIndex = question.correctIndex;
       } else {
-        // 动态题库：correct 是答案文本
-        correctIndex = (question.options || []).indexOf(question.correct);
+        // 动态题库：correct 是答案文本，归一化比较
+        const correctText = String(question.correct || '').trim();
+        const options = question.options || [];
+        correctIndex = options.findIndex(opt => String(opt).trim() === correctText);
+        if (correctIndex === -1) {
+          correctIndex = options.findIndex(opt =>
+            String(opt).trim().includes(correctText) || correctText.includes(String(opt).trim())
+          );
+        }
       }
       isCorrect = this.selectedAnswer === correctIndex;
     } else if (question.type === 'fill') {

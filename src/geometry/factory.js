@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { COLORS } from '../utils/constants.js';
+import { GEOMETRY_CONFIGS } from './configs.js';
 
 export class GeometryFactory {
   constructor(scene, labelRenderer) {
@@ -17,6 +18,10 @@ export class GeometryFactory {
   }
 
   createGeometry(config, options = {}) {
+    // 存储当前配置供 updateGeometryParam 使用
+    this.currentConfig = config;
+    this.currentOptions = options;
+
     const { showFaces = true, showEdges = true, showVertices = true, showLabels = true } = options;
     const group = new THREE.Group();
     group.name = 'geometry';
@@ -275,5 +280,119 @@ export class GeometryFactory {
 
   getVertexWorldPosition(vertexName) {
     return this.currentVertices[vertexName] || null;
+  }
+
+  /**
+   * 动态更新几何体参数
+   * @param {string} param - 参数名（如 size, width, height, radius 等）
+   * @param {number} value - 新参数值
+   */
+  updateGeometryParam(param, value) {
+    if (!this.currentConfig) return;
+
+    // 更新参数
+    if (!this.currentConfig.defaultParams) {
+      this.currentConfig.defaultParams = {};
+    }
+    this.currentConfig.defaultParams[param] = value;
+
+    // 移除旧几何体
+    const oldGroup = this.scene.getObjectByName('geometry');
+    if (oldGroup) {
+      this.scene.remove(oldGroup);
+      oldGroup.traverse(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => m.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      });
+    }
+
+    // 重新计算顶点（多面体）
+    if (this.currentConfig.type === 'polyhedron') {
+      this._recalculateVertices(this.currentConfig, param, value);
+    }
+
+    // 重建几何体
+    const newGroup = this.createGeometry(this.currentConfig, this.currentOptions);
+    this.scene.add(newGroup);
+
+    // 触发更新事件
+    this.scene.dispatchEvent({ type: 'geometryUpdate', param, value });
+  }
+
+  /**
+   * 根据参数重新计算顶点位置
+   * @param {object} config - 几何体配置
+   * @param {string} param - 变化的参数名
+   * @param {number} value - 新参数值
+   */
+  _recalculateVertices(config, param, value) {
+    const params = config.defaultParams;
+    const vertexDefs = config._originalVertices || config.vertices;
+
+    // 首次调用时缓存原始顶点定义
+    if (!config._originalVertices) {
+      config._originalVertices = JSON.parse(JSON.stringify(config.vertices));
+    }
+
+    // 参数→顶点分量的缩放映射
+    const scalingRules = {
+      cube:        { size:      { axes: ['x', 'y', 'z'] } },
+      rectangularBox: {
+        width:  { axes: ['x'] },
+        height: { axes: ['y'] },
+        depth:  { axes: ['z'] }
+      },
+      triangularPrism: {
+        radius: { axes: ['x', 'z'] },
+        height: { axes: ['y'] }
+      },
+      tetrahedron:       { radius:    { axes: ['x', 'y', 'z'] } },
+      squarePyramid: {
+        baseSize: { axes: ['x', 'z'] },
+        height:   { axes: ['y'] }
+      },
+      hexagonalPrism: {
+        radius: { axes: ['x', 'z'] },
+        height: { axes: ['y'] }
+      },
+      triangularPyramid: {
+        baseRadius: { axes: ['x', 'y', 'z'] },
+        height:     { axes: ['y'] }
+      }
+    };
+
+    const configKey = Object.entries(GEOMETRY_CONFIGS).find(([, v]) => v.name === config.name)?.[0];
+    const rules = scalingRules[configKey];
+    if (!rules) return;
+
+    // 计算各轴缩放因子
+    const scale = { x: 1, y: 1, z: 1 };
+    Object.entries(rules).forEach(([p, { axes }]) => {
+      const defaultVal = config._originalDefaultParams?.[p] ?? GEOMETRY_CONFIGS[configKey]?.defaultParams?.[p];
+      if (defaultVal && params[p] !== undefined) {
+        const factor = params[p] / defaultVal;
+        axes.forEach(axis => { scale[axis] = factor; });
+      }
+    });
+
+    // 首次缓存原始默认参数
+    if (!config._originalDefaultParams) {
+      config._originalDefaultParams = { ...GEOMETRY_CONFIGS[configKey]?.defaultParams };
+    }
+
+    // 应用缩放
+    Object.entries(vertexDefs).forEach(([name, pos]) => {
+      config.vertices[name] = [
+        pos[0] * scale.x,
+        pos[1] * scale.y,
+        pos[2] * scale.z
+      ];
+    });
   }
 }

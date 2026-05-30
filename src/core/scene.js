@@ -69,6 +69,20 @@ export class SceneManager {
     return this.axesVisible;
   }
 
+  setGridVisible(visible) {
+    this.gridVisible = visible;
+    if (this.gridHelper) {
+      this.gridHelper.visible = visible;
+    }
+  }
+
+  setAxesVisible(visible) {
+    this.axesVisible = visible;
+    if (this.axesHelper) {
+      this.axesHelper.visible = visible;
+    }
+  }
+
   add(key, object) {
     this.objects.set(key, object);
     this.scene.add(object);

@@ -6,6 +6,7 @@
 export class RecordsManager {
   constructor() {
     this.records = [];
+    this.wrongRecords = [];
     this.currentSession = null;
     this.loadFromStorage();
   }
@@ -41,6 +42,47 @@ export class RecordsManager {
     return false;
   }
 
+  /**
+   * 添加错题记录
+   * @param {Object} record - 错题记录
+   * @param {string} record.question - 题目内容
+   * @param {string} record.userAnswer - 用户答案
+   * @param {string} record.correctAnswer - 正确答案
+   * @param {string} record.geometryType - 几何体类型
+   * @param {string} record.difficulty - 难度
+   */
+  addWrongRecord(record) {
+    if (!record) return false;
+    const wrongRecord = {
+      id: Date.now(),
+      question: record.question || '',
+      userAnswer: record.userAnswer || '',
+      correctAnswer: record.correctAnswer || '',
+      geometryType: record.geometryType || '',
+      difficulty: record.difficulty || '',
+      timestamp: new Date().toISOString()
+    };
+    this.wrongRecords.unshift(wrongRecord);
+    if (this.wrongRecords.length > 200) {
+      this.wrongRecords = this.wrongRecords.slice(0, 200);
+    }
+    this.saveWrongRecordsToStorage();
+    return true;
+  }
+
+  getWrongRecords() {
+    return this.wrongRecords;
+  }
+
+  deleteWrongRecord(index) {
+    if (index >= 0 && index < this.wrongRecords.length) {
+      this.wrongRecords.splice(index, 1);
+      this.saveWrongRecordsToStorage();
+      return true;
+    }
+    return false;
+  }
+
   getRecords() {
     return this.records;
   }
@@ -49,13 +91,17 @@ export class RecordsManager {
     const totalPractices = this.records.length;
     const totalQuestions = this.records.reduce((sum, r) => sum + (r.stats?.total || 0), 0);
     const totalCorrect = this.records.reduce((sum, r) => sum + (r.stats?.correct || 0), 0);
+    const wrongCount = this.records.reduce((sum, r) => sum + (r.stats?.wrong || 0), 0);
     const totalTime = this.records.reduce((sum, r) => sum + (r.totalTime || 0), 0);
     const avgAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    const wrongRate = totalQuestions > 0 ? Math.round((wrongCount / totalQuestions) * 100) : 0;
 
     return {
       totalPractices,
       totalQuestions,
       totalCorrect,
+      wrongCount,
+      wrongRate,
       totalTime,
       avgAccuracy
     };
@@ -139,6 +185,14 @@ export class RecordsManager {
     }
   }
 
+  saveWrongRecordsToStorage() {
+    try {
+      localStorage.setItem('solid-geometry-wrong-records', JSON.stringify(this.wrongRecords));
+    } catch (e) {
+      console.error('Failed to save wrong records:', e);
+    }
+  }
+
   loadFromStorage() {
     try {
       const data = localStorage.getItem('solid-geometry-records');
@@ -148,10 +202,23 @@ export class RecordsManager {
     } catch (e) {
       console.error('Failed to load records:', e);
     }
+    try {
+      const wrongData = localStorage.getItem('solid-geometry-wrong-records');
+      if (wrongData) {
+        this.wrongRecords = JSON.parse(wrongData);
+      }
+    } catch (e) {
+      console.error('Failed to load wrong records:', e);
+    }
   }
 
   clearRecords() {
     this.records = [];
     this.saveToStorage();
+  }
+
+  clearWrongRecords() {
+    this.wrongRecords = [];
+    this.saveWrongRecordsToStorage();
   }
 }

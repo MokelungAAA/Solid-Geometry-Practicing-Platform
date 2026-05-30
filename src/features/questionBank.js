@@ -1067,14 +1067,20 @@ export class QuestionBank {
     };
   }
 
-  /** 随机出题（静态题库 + 30%动态） */
-  randomQuestion(answeredIds = []) {
-    const unanswered = STATIC_QUESTION_BANK.filter(q => !answeredIds.includes(q.id));
+  /** 随机出题（静态题库 + 30%动态），支持难度筛选 */
+  randomQuestion(answeredIds = [], difficulty = 'mixed') {
+    let unanswered = STATIC_QUESTION_BANK.filter(q => !answeredIds.includes(q.id));
+    // 按难度筛选静态题库
+    if (difficulty && difficulty !== 'mixed') {
+      const filtered = unanswered.filter(q => q.difficulty === difficulty);
+      // 如果筛选后有题目则使用筛选结果，否则用全部未答题目
+      if (filtered.length > 0) unanswered = filtered;
+    }
     if (unanswered.length === 0) {
-      return this.autoGenerateQuestion({ type: 'mixed', difficulty: 'mixed' });
+      return this.autoGenerateQuestion({ type: 'mixed', difficulty });
     }
     if (Math.random() < 0.3) {
-      return this.autoGenerateQuestion({ type: 'mixed', difficulty: 'mixed' });
+      return this.autoGenerateQuestion({ type: 'mixed', difficulty });
     }
     return unanswered[Math.floor(Math.random() * unanswered.length)];
   }
@@ -1085,13 +1091,17 @@ export class QuestionBank {
     const typeFilter = options.type || 'mixed';
     const difficultyFilter = options.difficulty || 'mixed';
     const knowledgeFilter = options.knowledge || [];
+    const geometryFilter = options.geometry || 'mixed';
 
     const allTypes = ['choice', 'fill', 'proof'];
     const qType = typeFilter === 'mixed'
       ? allTypes[Math.floor(Math.random() * allTypes.length)]
       : typeFilter;
 
-    const geoType = geometryTypes[Math.floor(Math.random() * geometryTypes.length)];
+    // 如果指定了几何体类型，使用指定类型；否则随机选择
+    const geoType = geometryFilter !== 'mixed' && GEOMETRY_CONFIGS[geometryFilter]
+      ? geometryFilter
+      : geometryTypes[Math.floor(Math.random() * geometryTypes.length)];
     return this.generateDynamicQuestion(qType, geoType, {
       difficulty: difficultyFilter,
       knowledge: knowledgeFilter
