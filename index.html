@@ -8,364 +8,445 @@
     <!-- 字体 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- 样式 -->
-    <link rel="stylesheet" href="./css/variables.css">
-    <link rel="stylesheet" href="./css/layout.css">
-    <link rel="stylesheet" href="./css/components.css">
-    <link rel="stylesheet" href="./css/animations.css">
+    <!-- Material You 样式 -->
+    <link rel="stylesheet" href="./css/material-you.css">
+    <link rel="stylesheet" href="./css/material-layout.css">
+    <link rel="stylesheet" href="./css/material-components.css">
+
+    <!-- 内联样式 -->
+    <style>
+        /* 确保body没有默认边距 */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body>
     <!-- ========== 加载动画 ========== -->
     <div class="loading-overlay" id="loading-overlay">
-        <div class="loading-spinner">
-            <div class="cube-frame">
-                <svg viewBox="0 0 60 60"><path class="edge" d="M30 10 L50 20 L50 40 L30 50 L10 40 L10 20 Z"/><path class="edge" d="M30 10 L30 30 M50 20 L30 30 M10 20 L30 30"/></svg>
-            </div>
-            <div class="cube-frame">
-                <svg viewBox="0 0 60 60"><path class="edge" d="M30 10 L50 20 L50 40 L30 50 L10 40 L10 20 Z"/><path class="edge" d="M30 10 L30 30 M50 20 L30 30 M10 20 L30 30"/></svg>
-            </div>
-        </div>
+        <div class="loading-spinner"></div>
         <div class="loading-text">正在加载几何引擎...</div>
+        <div style="color: var(--md-on-surface-disabled); font-size: var(--md-font-size-xs); margin-top: var(--md-spacing-md); text-align: center; max-width: 400px;">
+            如果长时间未加载，请确保通过本地服务器运行（双击 start-server.bat 或运行 npm run dev）
+        </div>
     </div>
 
     <!-- ========== 主容器 ========== -->
-    <div class="app-container">
-        <!-- ========== 左侧工具栏 ========== -->
-        <div class="toolbar" id="toolbar">
-            <!-- 几何体选择 -->
-            <div class="toolbar-section">
-                <div class="section-header">
-                    <div class="toolbar-title">
-                        <span class="svg-icon">
-                            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                        </span> 几何体
-                    </div>
-                    <span class="section-toggle">▼</span>
-                </div>
-                <div class="section-content">
-                    <div class="geometry-grid" id="geometry-grid">
-                        <!-- 由JS动态生成 -->
-                    </div>
-                </div>
+    <div class="app-container" id="app-container">
+        <!-- ========== 顶部导航栏 ========== -->
+        <nav class="top-nav">
+            <div class="nav-brand">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span>立体几何练习平台</span>
             </div>
 
-            <!-- 视图控制 -->
-            <div class="toolbar-section">
-                <div class="section-header">
-                    <div class="toolbar-title">
-                        <span class="svg-icon">
-                            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </span> 视图
-                    </div>
-                    <span class="section-toggle">▼</span>
-                </div>
-                <div class="section-content">
-                    <div class="view-buttons">
-                        <button class="btn btn-sm view-btn" id="btn-front">
-                            <span class="btn-svg">
-                                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
-                            </span>
-                            <span class="btn-text">正视图</span>
-                        </button>
-                        <button class="btn btn-sm view-btn" id="btn-side">
-                            <span class="btn-svg">
-                                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
-                            </span>
-                            <span class="btn-text">侧视图</span>
-                        </button>
-                        <button class="btn btn-sm view-btn active" id="btn-perspective">
-                            <span class="btn-svg">
-                                <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                            </span>
-                            <span class="btn-text">透视</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 显示控制 -->
-            <div class="toolbar-section">
-                <div class="section-header">
-                    <div class="toolbar-title">
-                        <span class="svg-icon">
-                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/><path d="m4.93 4.93 2.83 2.83m8.48 8.48 2.83 2.83m0-14.14-2.83 2.83m-8.48 8.48-2.83 2.83"/></svg>
-                        </span> 显示控制
-                    </div>
-                    <span class="section-toggle">▼</span>
-                </div>
-                <div class="section-content">
-                    <div class="control-group">
-                        <label class="control-label">
-                            <span>显示模式</span>
-                        </label>
-                        <div style="display:flex;gap:8px;">
-                            <button class="btn btn-sm mode-btn active" id="btn-solid" style="flex:1;">
-                                <span class="btn-svg">
-                                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-                                </span>
-                                <span class="btn-text">实体</span>
-                            </button>
-                            <button class="btn btn-sm mode-btn" id="btn-wireframe" style="flex:1;">
-                                <span class="btn-svg">
-                                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/></svg>
-                                </span>
-                                <span class="btn-text">线框</span>
-                            </button>
-                            <button class="btn btn-sm mode-btn" id="btn-hidden-edges" style="flex:1;">
-                                <span class="btn-svg">
-                                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9" stroke-dasharray="3 2"/></svg>
-                                </span>
-                                <span class="btn-text">虚线</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label">
-                            <span>透明度</span>
-                            <span id="opacity-value">0.50</span>
-                        </label>
-                        <input type="range" id="opacity-slider" min="0.1" max="1" step="0.05" value="0.5">
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label">
-                            <span>辅助元素</span>
-                        </label>
-                        <div style="display:flex;gap:8px;">
-                            <button class="btn btn-sm active" id="btn-grid" style="flex:1;">
-                                <span class="svg-icon">
-                                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                                </span> 地面网格
-                            </button>
-                            <button class="btn btn-sm active" id="btn-axes" style="flex:1;">
-                                <span class="svg-icon">
-                                    <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><path d="m4.93 4.93 4.24 4.24m9.9 9.9 4.24 4.24m0-14.14-4.24 4.24m-9.9 9.9-4.24 4.24"/></svg>
-                                </span> 坐标轴
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 展开图 -->
-            <div class="toolbar-section">
-                <div class="section-header">
-                    <div class="toolbar-title">
-                        <span class="svg-icon">
-                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><path d="M17 13v-2l4-2v6"/></svg>
-                        </span> 展开图
-                    </div>
-                    <span class="section-toggle">▼</span>
-                </div>
-                <div class="section-content">
-                    <div style="display:flex;gap:8px;">
-                        <button class="btn btn-primary btn-sm" id="btn-unfold" style="flex:1;">
-                            <span class="svg-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14m0 0-7-7m7 7 7-7"/></svg></span> 展开
-                        </button>
-                        <button class="btn btn-danger btn-sm" id="btn-fold" style="flex:1;">
-                            <span class="svg-icon"><svg viewBox="0 0 24 24"><path d="M12 19V5m0 0 7 7m-7-7-7 7"/></svg></span> 折叠
-                        </button>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label">
-                            <span>展开进度</span>
-                            <span id="unfold-value">0%</span>
-                        </label>
-                        <input type="range" id="unfold-slider" min="0" max="100" step="1" value="0">
-                    </div>
-                </div>
-            </div>
-
-            <!-- 截面工具 -->
-            <div class="toolbar-section">
-                <div class="section-header">
-                    <div class="toolbar-title">
-                        <span class="svg-icon">
-                            <svg viewBox="0 0 24 24"><path d="M14.5 2.5L2 15l7.5 7.5L22 10l-7.5-7.5z"/><path d="m2 15 5 5"/><path d="m17 3 4 4"/></svg>
-                        </span> 截面工具
-                    </div>
-                    <span class="section-toggle">▼</span>
-                </div>
-                <div class="section-content">
-                    <!-- 截面选点模式切换 -->
-                    <button class="btn btn-sm" id="btn-cross-section-mode" style="margin-bottom:10px;width:100%;">
-                        <span class="svg-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></span> 进入截面选点模式
-                    </button>
-
-                    <!-- 选点模式说明 -->
-                    <div id="section-mode-hint" class="section-mode-hint" style="display:none;">
-                        <div class="hint-text">点击几何体表面放置截面点</div>
-                        <div class="hint-text dim">右键点击已放置的点可删除</div>
-                    </div>
-
-                    <!-- 截面点列表 -->
-                    <div class="section-points-container" id="section-points-container" style="display:none;">
-                        <div class="control-label">
-                            <span>已选截面点</span>
-                            <span id="section-point-count">0</span>
-                        </div>
-                        <div class="section-points-list" id="section-points-list"></div>
-                        <button class="btn btn-danger btn-sm" id="btn-clear-section-points" style="width:100%;margin-top:6px;">
-                            <span class="svg-icon"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></span> 清空截面点
-                        </button>
-                    </div>
-
-                    <div class="control-label" style="margin-top:12px;">
-                        <span>顶点选择（备选方式）</span>
-                    </div>
-                    <div class="vertex-selector-row" id="vertex-selector"></div>
-
-                    <div style="display:flex;gap:8px;margin-top:10px;">
-                        <button class="btn btn-success btn-sm" id="btn-create-section" style="flex:1;">
-                            <span class="svg-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> 创建截面
-                        </button>
-                        <button class="btn btn-danger btn-sm" id="btn-clear-section" style="flex:1;">
-                            <span class="svg-icon"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></span> 清除截面
-                        </button>
-                    </div>
-                    <div class="cross-section-info" id="section-info" style="display:none;">
-                        <div>已选点数: <span id="section-vertex-count">0</span></div>
-                        <div class="section-area" id="section-area" style="display:none;">
-                            <span class="svg-icon svg-icon-sm"><svg viewBox="0 0 24 24"><path d="M2 20L12 4l10 16H2z"/></svg></span> 截面面积: <span id="section-area-value">0.00</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========== 工具栏折叠按钮 ========== -->
-        <button class="toolbar-toggle" id="toolbar-toggle">◀</button>
-
-        <!-- ========== 中间3D画布 ========== -->
-        <div class="canvas-container">
-            <div id="canvas-wrapper"></div>
-
-            <!-- 几何体信息卡片 -->
-            <div class="geometry-info-card" id="geometry-info-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <span class="svg-icon">
-                            <svg viewBox="0 0 24 24"><path d="M2 20L12 4l10 16H2z"/></svg>
-                        </span>
-                        <span id="geometry-name">正方体</span>
-                    </div>
-                    <button class="toggle-btn" id="toggle-info-card" title="收起详情">−</button>
-                </div>
-                <div class="card-stats">
-                    <div class="stat-block">
-                        <div class="svg-icon svg-icon-sm" style="margin-bottom:2px;">
-                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></svg>
-                        </div>
-                        <div class="stat-number" id="vertex-count">8</div>
-                        <div class="stat-label">顶点</div>
-                    </div>
-                    <div class="stat-block">
-                        <div class="svg-icon svg-icon-sm" style="margin-bottom:2px;">
-                            <svg viewBox="0 0 24 24"><path d="M4 12h16"/></svg>
-                        </div>
-                        <div class="stat-number" id="edge-count">12</div>
-                        <div class="stat-label">棱</div>
-                    </div>
-                    <div class="stat-block">
-                        <div class="svg-icon svg-icon-sm" style="margin-bottom:2px;">
-                            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16"/></svg>
-                        </div>
-                        <div class="stat-number" id="face-count">6</div>
-                        <div class="stat-label">面</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Toast提示容器 -->
-            <div class="toast-container" id="toast-container"></div>
-            <!-- 操作提示浮层 -->
-            <div class="controls-hint">
-                <span><span class="svg-icon svg-icon-sm"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span> 左键旋转</span>
-                <span>滚轮缩放</span>
-                <span>右键平移</span>
-            </div>
-            <!-- 辅助平面指示器 -->
-            <div class="plane-indicator" id="plane-indicator">
-                <span class="dot grid"></span><span>地面网格</span>
-                <span class="dot axes"></span><span>坐标轴</span>
-            </div>
-            <div class="unfold-indicator" id="unfold-indicator" style="display:none;">
-                展开进度: <span id="indicator-value">0</span>%
-            </div>
-        </div>
-
-        <!-- ========== 右侧题目面板 ========== -->
-        <div class="question-panel">
-            <!-- 统计 -->
-            <div class="stats-bar">
-                <div class="stat-item">
-                    <div class="stat-value" id="total-questions">0</div>
-                    <div class="stat-label">总题数</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="correct-count">0</div>
-                    <div class="stat-label">正确</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="accuracy">0%</div>
-                    <div class="stat-label">正确率</div>
-                </div>
-                <div style="position:absolute;top:4px;right:6px;">
-                    <button class="btn-sm" id="btn-reset-data" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:2px 6px;border-radius:4px;cursor:pointer;opacity:0.5;" title="清除所有记录">🗑</button>
-                </div>
-            </div>
-
-            <!-- 出题按钮 -->
-            <div class="question-buttons" style="margin-bottom:12px;">
-                <button class="btn btn-primary" id="btn-random-question" style="margin-bottom:8px;">
-                    <span class="svg-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><circle cx="16" cy="16" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="16" cy="8" r="1.5"/><circle cx="8" cy="16" r="1.5"/></svg></span> 随机出题
+            <div class="tab-bar" id="tab-bar">
+                <button class="tab-item active" data-tab="view">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span>查看模式</span>
                 </button>
-                <button class="btn" id="btn-auto-generate" style="margin-bottom:8px;">
-                    <span class="svg-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span> 快速生成
+                <button class="tab-item" data-tab="practice">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    <span>练习模式</span>
+                </button>
+                <button class="tab-item" data-tab="records">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20V10"/>
+                        <path d="M18 20V4"/>
+                        <path d="M6 20v-4"/>
+                    </svg>
+                    <span>做题记录</span>
                 </button>
             </div>
 
-            <!-- 出题控制面板 -->
-            <div class="question-control-panel" id="question-control-panel" style="background:var(--bg-card);border-radius:12px;padding:12px;margin-bottom:15px;border:2px solid var(--border);">
-                <div class="control-panel-header">
-                    <div class="toolbar-title" style="font-size:14px;margin-bottom:0;padding-bottom:0;border-bottom:none;">
-                        <span class="svg-icon">
-                            <svg viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
-                        </span> 出题控制
+            <div style="display: flex; align-items: center; gap: var(--md-spacing-sm);">
+                <button class="btn btn-ghost btn-icon" id="btn-settings" title="设置">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <!-- ========== 主内容区 ========== -->
+        <div class="main-content">
+            <!-- ========== 查看模式 ========== -->
+            <div class="tab-content active" id="tab-view">
+                <!-- 左侧面板 -->
+                <div class="left-panel">
+                    <!-- 几何体选择 -->
+                    <div class="panel-header">
+                        <div class="panel-title">几何体选择</div>
                     </div>
-                    <span class="panel-toggle">▼</span>
+                    <div class="panel-content">
+                        <div class="geometry-selector" id="geometry-selector">
+                            <!-- 由JS动态生成 -->
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- 视图控制 -->
+                    <div class="panel-header">
+                        <div class="panel-title">视图控制</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="view-controls">
+                            <div class="control-group">
+                                <div class="control-label">视角</div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-secondary" id="btn-front">正视图</button>
+                                    <button class="btn btn-sm btn-secondary" id="btn-side">侧视图</button>
+                                    <button class="btn btn-sm btn-secondary active" id="btn-perspective">透视</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- 显示控制 -->
+                    <div class="panel-header">
+                        <div class="panel-title">显示控制</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="display-controls">
+                            <div class="control-group">
+                                <div class="control-label">显示模式</div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-secondary active" id="btn-solid">实体</button>
+                                    <button class="btn btn-sm btn-secondary" id="btn-wireframe">线框</button>
+                                    <button class="btn btn-sm btn-secondary" id="btn-hidden-edges">虚线</button>
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <div class="slider-container">
+                                    <div class="slider-header">
+                                        <span class="slider-label">透明度</span>
+                                        <span class="slider-value" id="opacity-value">0.50</span>
+                                    </div>
+                                    <input type="range" class="slider" id="opacity-slider" min="0.1" max="1" step="0.05" value="0.5">
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <div class="control-label">辅助元素</div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-secondary active" id="btn-grid">地面网格</button>
+                                    <button class="btn btn-sm btn-secondary active" id="btn-axes">坐标轴</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- 展开图 -->
+                    <div class="panel-header">
+                        <div class="panel-title">展开图</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="unfold-controls">
+                            <div class="btn-group" style="margin-bottom: var(--md-spacing-md);">
+                                <button class="btn btn-sm btn-primary" id="btn-unfold">展开</button>
+                                <button class="btn btn-sm btn-danger" id="btn-fold">折叠</button>
+                            </div>
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <span class="slider-label">展开进度</span>
+                                    <span class="slider-value" id="unfold-value">0%</span>
+                                </div>
+                                <input type="range" class="slider" id="unfold-slider" min="0" max="100" step="1" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- 截面工具 -->
+                    <div class="panel-header">
+                        <div class="panel-title">截面工具</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="section-controls">
+                            <button class="btn btn-sm btn-secondary" id="btn-cross-section-mode" style="width: 100%; margin-bottom: var(--md-spacing-md);">
+                                进入截面选点模式
+                            </button>
+
+                            <div id="section-mode-hint" style="display: none; margin-bottom: var(--md-spacing-md);">
+                                <div style="font-size: var(--md-font-size-xs); color: var(--md-on-surface-variant);">
+                                    点击几何体表面放置截面点
+                                </div>
+                            </div>
+
+                            <div id="section-points-container" style="display: none; margin-bottom: var(--md-spacing-md);">
+                                <div class="control-label">已选截面点</div>
+                                <div id="section-points-list"></div>
+                                <button class="btn btn-sm btn-danger" id="btn-clear-section-points" style="width: 100%; margin-top: var(--md-spacing-sm);">
+                                    清空截面点
+                                </button>
+                            </div>
+
+                            <div class="control-label">顶点选择（备选方式）</div>
+                            <div class="vertex-selector" id="vertex-selector"></div>
+
+                            <div class="btn-group" style="margin-top: var(--md-spacing-md);">
+                                <button class="btn btn-sm btn-success" id="btn-create-section">创建截面</button>
+                                <button class="btn btn-sm btn-danger" id="btn-clear-section">清除截面</button>
+                            </div>
+
+                            <div id="section-info" style="display: none; margin-top: var(--md-spacing-md);">
+                                <div style="font-size: var(--md-font-size-xs); color: var(--md-on-surface-variant);">
+                                    已选点数: <span id="section-vertex-count">0</span>
+                                </div>
+                                <div id="section-area" style="display: none; font-size: var(--md-font-size-xs); color: var(--md-primary); margin-top: var(--md-spacing-xs);">
+                                    截面面积: <span id="section-area-value">0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="control-panel-body">
-                    <!-- 由JS动态生成 -->
+
+                <!-- 右侧3D场景 -->
+                <div class="scene-container">
+                    <div id="canvas-wrapper"></div>
+
+                    <!-- 几何体信息卡片 -->
+                    <div class="geometry-info-card" id="geometry-info-card">
+                        <div class="info-card-header">
+                            <div class="info-card-title" id="geometry-name">正方体</div>
+                            <button class="btn btn-ghost btn-icon btn-sm" id="toggle-info-card" title="收起详情">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="info-card-stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="vertex-count">8</div>
+                                <div class="stat-label">顶点</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="edge-count">12</div>
+                                <div class="stat-label">棱</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="face-count">6</div>
+                                <div class="stat-label">面</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Toast提示容器 -->
+                    <div class="toast-container" id="toast-container"></div>
+
+                    <!-- 操作提示浮层 -->
+                    <div class="controls-hint">
+                        <span>左键旋转</span>
+                        <span>滚轮缩放</span>
+                        <span>右键平移</span>
+                    </div>
+
+                    <!-- 辅助平面指示器 -->
+                    <div class="plane-indicator" id="plane-indicator">
+                        <span class="dot grid"></span><span>地面网格</span>
+                        <span class="dot axes"></span><span>坐标轴</span>
+                    </div>
+                    <div class="unfold-indicator" id="unfold-indicator" style="display: none;">
+                        展开进度: <span id="indicator-value">0</span>%
+                    </div>
                 </div>
             </div>
 
-            <!-- 题目容器 -->
-            <div id="question-container">
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <span class="svg-icon" style="width:48px;height:48px;opacity:0.5;">
-                            <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                        </span>
+            <!-- ========== 练习模式 ========== -->
+            <div class="tab-content" id="tab-practice">
+                <!-- 左侧题目面板 -->
+                <div class="left-panel">
+                    <!-- 统计 -->
+                    <div class="stats-bar">
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-questions">0</div>
+                            <div class="stat-label">总题数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="correct-count">0</div>
+                            <div class="stat-label">正确</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="accuracy">0%</div>
+                            <div class="stat-label">正确率</div>
+                        </div>
                     </div>
-                    <p>点击上方按钮开始练习</p>
+
+                    <!-- 出题控制 -->
+                    <div class="panel-header">
+                        <div class="panel-title">出题设置</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="practice-settings">
+                            <div class="input-group">
+                                <label class="input-label">练习模式</label>
+                                <select class="select" id="practice-mode">
+                                    <option value="current">当前几何体</option>
+                                    <option value="random">随机混合</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label">题目数量</label>
+                                <select class="select" id="question-count">
+                                    <option value="3">3题</option>
+                                    <option value="5" selected>5题</option>
+                                    <option value="8">8题</option>
+                                    <option value="10">10题</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label">难度选择</label>
+                                <select class="select" id="difficulty-level">
+                                    <option value="mixed" selected>混合</option>
+                                    <option value="easy">简单</option>
+                                    <option value="medium">中等</option>
+                                    <option value="hard">困难</option>
+                                </select>
+                            </div>
+
+                            <button class="btn btn-primary" id="btn-start-practice" style="width: 100%;">
+                                开始练习
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- 题目容器 -->
+                    <div class="panel-header">
+                        <div class="panel-title">题目</div>
+                    </div>
+                    <div class="panel-content" id="question-container">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                </svg>
+                            </div>
+                            <div class="empty-state-title">开始练习</div>
+                            <div class="empty-state-text">选择设置后点击"开始练习"按钮</div>
+                        </div>
+                    </div>
+
+                    <!-- 题目详情模板（隐藏） -->
+                    <template id="question-template">
+                        <div class="question-item">
+                            <div class="question-header">
+                                <span class="question-number"></span>
+                                <span class="question-type"></span>
+                                <span class="question-difficulty"></span>
+                            </div>
+                            <div class="question-text"></div>
+                            <div class="question-input">
+                                <input type="text" class="input" placeholder="请输入答案">
+                            </div>
+                            <div class="question-actions">
+                                <button class="btn btn-sm btn-primary">提交答案</button>
+                                <button class="btn btn-sm btn-outline">查看提示</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- 右侧3D场景（练习模式） -->
+                <div class="scene-container">
+                    <div id="canvas-wrapper-practice"></div>
+
+                    <!-- 题目信息浮层 -->
+                    <div class="question-overlay" id="question-overlay" style="display: none;">
+                        <div class="question-info">
+                            <div class="question-number" id="question-number">第 1 题</div>
+                            <div class="question-text" id="question-text"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 题库列表 -->
-            <div class="toolbar-section" style="margin-top:auto;">
-                <div class="toolbar-title">
-                    <span class="svg-icon">
-                        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                    </span> 题库选择
+            <!-- ========== 做题记录 ========== -->
+            <div class="tab-content" id="tab-records">
+                <!-- 左侧记录列表 -->
+                <div class="left-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">做题记录</div>
+                        <div style="display: flex; gap: var(--md-spacing-sm);">
+                            <button class="btn btn-sm btn-outline" id="btn-export-records">导出</button>
+                            <button class="btn btn-sm btn-outline" id="btn-import-records">导入</button>
+                        </div>
+                    </div>
+                    <div class="panel-content" id="records-list">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M12 20V10"/>
+                                    <path d="M18 20V4"/>
+                                    <path d="M6 20v-4"/>
+                                </svg>
+                            </div>
+                            <div class="empty-state-title">暂无记录</div>
+                            <div class="empty-state-text">完成练习后会自动记录</div>
+                        </div>
+                    </div>
                 </div>
-                <select id="question-select">
-                    <option value="">-- 选择题目 --</option>
-                </select>
+
+                <!-- 右侧统计图表 -->
+                <div class="scene-container" style="background: var(--md-surface);">
+                    <div class="records-stats" id="records-stats">
+                        <div class="stats-overview">
+                            <div class="stats-card">
+                                <div class="stats-card-title">总练习次数</div>
+                                <div class="stats-card-value" id="total-practices">0</div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-card-title">平均正确率</div>
+                                <div class="stats-card-value" id="avg-accuracy">0%</div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-card-title">总用时</div>
+                                <div class="stats-card-value" id="total-time">0分钟</div>
+                            </div>
+                        </div>
+
+                        <div class="stats-chart" id="stats-chart">
+                            <div class="chart-header">
+                                <div class="chart-title">正确率趋势</div>
+                            </div>
+                            <div class="chart-content">
+                                <canvas id="accuracy-chart" style="width: 100%; height: 200px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="import-file-input" accept=".json" style="display: none;">
 
     <!-- 主脚本 -->
     <script type="module" src="./src/main.js"></script>

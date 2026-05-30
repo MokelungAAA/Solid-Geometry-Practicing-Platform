@@ -1,0 +1,487 @@
+/* ========================================
+   Material You 组件库
+   按钮、卡片、输入框、选择器等
+   ======================================== */
+
+/* ===== 按钮基础样式 ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-spacing-sm);
+    padding: var(--md-spacing-sm) var(--md-spacing-lg);
+    border: none;
+    border-radius: var(--md-radius-xl);
+    font-family: var(--md-font-family);
+    font-size: var(--md-font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--md-duration-fast) var(--md-easing-standard);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ===== 按钮变体 ===== */
+.btn-primary {
+    background: var(--md-primary);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--md-primary-dark);
+    box-shadow: var(--md-shadow-2);
+}
+
+.btn-secondary {
+    background: var(--md-surface-container);
+    color: var(--md-on-surface);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--md-surface-container-high);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--md-primary);
+    border: 1px solid var(--md-outline);
+}
+
+.btn-outline:hover:not(:disabled) {
+    background: var(--md-primary-lightest);
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--md-on-surface-variant);
+}
+
+.btn-ghost:hover:not(:disabled) {
+    background: var(--md-surface-container);
+}
+
+.btn-success {
+    background: var(--md-success);
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #16a34a;
+}
+
+.btn-warning {
+    background: var(--md-warning);
+    color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: #d97706;
+}
+
+.btn-danger {
+    background: var(--md-error);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+/* ===== 按钮尺寸 ===== */
+.btn-sm {
+    padding: var(--md-spacing-xs) var(--md-spacing-md);
+    font-size: var(--md-font-size-xs);
+    border-radius: var(--md-radius-sm);
+}
+
+.btn-lg {
+    padding: var(--md-spacing-md) var(--md-spacing-xl);
+    font-size: var(--md-font-size-md);
+}
+
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: var(--md-radius-xl);
+}
+
+.btn-icon.btn-sm {
+    width: 32px;
+    height: 32px;
+}
+
+/* ===== 卡片 ===== */
+.card {
+    background: var(--md-surface);
+    border-radius: var(--md-radius-md);
+    border: 1px solid var(--md-outline);
+    overflow: hidden;
+}
+
+.card-elevated {
+    box-shadow: var(--md-shadow-1);
+    border: none;
+}
+
+.card-filled {
+    background: var(--md-surface-container);
+    border: none;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--md-spacing-md) var(--md-spacing-lg);
+    border-bottom: 1px solid var(--md-outline);
+}
+
+.card-title {
+    font-size: var(--md-font-size-md);
+    font-weight: 600;
+    color: var(--md-on-surface);
+}
+
+.card-content {
+    padding: var(--md-spacing-lg);
+}
+
+.card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--md-spacing-sm);
+    padding: var(--md-spacing-md) var(--md-spacing-lg);
+    border-top: 1px solid var(--md-outline);
+}
+
+/* ===== 输入框 ===== */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-spacing-xs);
+}
+
+.input-label {
+    font-size: var(--md-font-size-sm);
+    font-weight: 500;
+    color: var(--md-on-surface-variant);
+}
+
+.input {
+    width: 100%;
+    padding: var(--md-spacing-sm) var(--md-spacing-md);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--md-radius-sm);
+    font-family: var(--md-font-family);
+    font-size: var(--md-font-size-sm);
+    color: var(--md-on-surface);
+    background: var(--md-surface);
+    transition: all var(--md-duration-fast) var(--md-easing-standard);
+    outline: none;
+}
+
+.input:focus {
+    border-color: var(--md-primary);
+    box-shadow: 0 0 0 2px var(--md-primary-lightest);
+}
+
+.input::placeholder {
+    color: var(--md-on-surface-disabled);
+}
+
+/* ===== 选择框 ===== */
+.select {
+    width: 100%;
+    padding: var(--md-spacing-sm) var(--md-spacing-md);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--md-radius-sm);
+    font-family: var(--md-font-family);
+    font-size: var(--md-font-size-sm);
+    color: var(--md-on-surface);
+    background: var(--md-surface);
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+}
+
+.select:focus {
+    border-color: var(--md-primary);
+    box-shadow: 0 0 0 2px var(--md-primary-lightest);
+}
+
+/* ===== 滑块 ===== */
+.slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-spacing-xs);
+}
+
+.slider-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.slider-label {
+    font-size: var(--md-font-size-sm);
+    color: var(--md-on-surface-variant);
+}
+
+.slider-value {
+    font-size: var(--md-font-size-sm);
+    font-weight: 500;
+    color: var(--md-primary);
+}
+
+.slider {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--md-outline);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--md-primary);
+    cursor: pointer;
+    box-shadow: var(--md-shadow-1);
+    transition: transform var(--md-duration-fast) var(--md-easing-standard);
+}
+
+.slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+/* ===== 芯片/标签 ===== */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--md-spacing-xs);
+    padding: var(--md-spacing-xs) var(--md-spacing-md);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--md-radius-xl);
+    font-size: var(--md-font-size-xs);
+    color: var(--md-on-surface-variant);
+    background: var(--md-surface);
+    cursor: pointer;
+    transition: all var(--md-duration-fast) var(--md-easing-standard);
+}
+
+.chip:hover {
+    background: var(--md-surface-container);
+}
+
+.chip.active {
+    background: var(--md-primary-lightest);
+    color: var(--md-primary-dark);
+    border-color: var(--md-primary-lighter);
+}
+
+.chip svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ===== 分割线 ===== */
+.divider {
+    height: 1px;
+    background: var(--md-outline);
+    margin: var(--md-spacing-md) 0;
+}
+
+/* ===== 空状态 ===== */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--md-spacing-2xl);
+    text-align: center;
+}
+
+.empty-state-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--md-spacing-lg);
+    color: var(--md-on-surface-disabled);
+}
+
+.empty-state-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.empty-state-title {
+    font-size: var(--md-font-size-lg);
+    font-weight: 600;
+    color: var(--md-on-surface);
+    margin-bottom: var(--md-spacing-sm);
+}
+
+.empty-state-text {
+    font-size: var(--md-font-size-sm);
+    color: var(--md-on-surface-variant);
+    max-width: 300px;
+}
+
+/* ===== 进度条 ===== */
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--md-outline);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--md-primary);
+    border-radius: 2px;
+    transition: width var(--md-duration-normal) var(--md-easing-standard);
+}
+
+/* ===== 徽章 ===== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-primary {
+    background: var(--md-primary);
+    color: white;
+}
+
+.badge-success {
+    background: var(--md-success);
+    color: white;
+}
+
+.badge-warning {
+    background: var(--md-warning);
+    color: white;
+}
+
+.badge-error {
+    background: var(--md-error);
+    color: white;
+}
+
+/* ===== 开关 ===== */
+.switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: var(--md-outline);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background var(--md-duration-fast) var(--md-easing-standard);
+}
+
+.switch.active {
+    background: var(--md-primary);
+}
+
+.switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: var(--md-shadow-1);
+    transition: transform var(--md-duration-fast) var(--md-easing-standard);
+}
+
+.switch.active::after {
+    transform: translateX(20px);
+}
+
+/* ===== 工具提示 ===== */
+.tooltip {
+    position: relative;
+}
+
+.tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: var(--md-spacing-xs) var(--md-spacing-sm);
+    background: var(--md-on-surface);
+    color: var(--md-surface);
+    font-size: var(--md-font-size-xs);
+    border-radius: var(--md-radius-xs);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--md-duration-fast) var(--md-easing-standard);
+    margin-bottom: 6px;
+}
+
+.tooltip:hover::after {
+    opacity: 1;
+}
+
+/* ===== 折叠面板 ===== */
+.collapse {
+    overflow: hidden;
+    transition: max-height var(--md-duration-normal) var(--md-easing-standard);
+}
+
+.collapse-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--md-spacing-md);
+    cursor: pointer;
+    user-select: none;
+}
+
+.collapse-header:hover {
+    background: var(--md-surface-container);
+}
+
+.collapse-icon {
+    transition: transform var(--md-duration-fast) var(--md-easing-standard);
+}
+
+.collapse.open .collapse-icon {
+    transform: rotate(180deg);
+}
+
+.collapse-content {
+    padding: 0 var(--md-spacing-md) var(--md-spacing-md);
+}

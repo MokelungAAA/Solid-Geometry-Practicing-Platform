@@ -27,6 +27,11 @@ export class GeometryFactory {
         this.geometryGroup = new THREE.Group();
         this.geometryGroup.name = 'geometry';
 
+        // 检查是否为曲面几何体
+        if (config.type === 'curved') {
+            return this.createCurvedGeometry(config, options);
+        }
+
         const vertices = config.vertices;
         const faces = config.faces;
 
@@ -57,6 +62,74 @@ export class GeometryFactory {
         // 创建顶点
         if (showVertices) {
             this.createVertices(vertices);
+        }
+
+        this.scene.add(this.geometryGroup);
+        return this.geometryGroup;
+    }
+
+    // ========================
+    // 创建曲面几何体
+    // ========================
+    createCurvedGeometry(config, options = {}) {
+        const { showEdges = true, opacity = 0.6 } = options;
+        const params = config.params;
+
+        // 创建材质
+        const faceMaterial = new THREE.MeshPhongMaterial({
+            color: 0x6c8ebf,
+            transparent: true,
+            opacity: opacity,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+
+        const edgeMaterial = new THREE.LineBasicMaterial({
+            color: 0xdfd0b7,
+            linewidth: 2
+        });
+
+        // 根据曲面类型创建几何体
+        let geometry;
+        switch (config.curvedType) {
+            case 'cylinder':
+                geometry = new THREE.CylinderGeometry(
+                    params.radiusTop,
+                    params.radiusBottom,
+                    params.height,
+                    params.radialSegments
+                );
+                break;
+            case 'cone':
+                geometry = new THREE.ConeGeometry(
+                    params.radius,
+                    params.height,
+                    params.radialSegments
+                );
+                break;
+            case 'sphere':
+                geometry = new THREE.SphereGeometry(
+                    params.radius,
+                    params.widthSegments,
+                    params.heightSegments
+                );
+                break;
+            default:
+                console.error('未知的曲面类型:', config.curvedType);
+                return null;
+        }
+
+        // 创建网格
+        const mesh = new THREE.Mesh(geometry, faceMaterial);
+        mesh.name = config.curvedType;
+        this.geometryGroup.add(mesh);
+        this.faceMeshes.push(mesh);
+
+        // 创建边框
+        if (showEdges) {
+            const edgesGeometry = new THREE.EdgesGeometry(geometry);
+            const edgesMesh = new THREE.LineSegments(edgesGeometry, edgeMaterial);
+            this.geometryGroup.add(edgesMesh);
         }
 
         this.scene.add(this.geometryGroup);

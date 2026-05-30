@@ -9,7 +9,7 @@ export class SceneManager {
     constructor() {
         this.scene = null;
         this.gridHelper = null;
-        this.axesHelper = null;
+        this.axesGroup = null;  // 坐标轴组（包含线条、箭头、标签）
         this.groundPlane = null;
 
         this.init();
@@ -54,42 +54,45 @@ export class SceneManager {
         const axisLength = 4;
         const arrowSize = 0.15;
 
+        // 创建坐标轴组
+        this.axesGroup = new THREE.Group();
+
         // X轴 (红色)
         const xMaterial = new THREE.LineBasicMaterial({ color: 0xe68a8a, linewidth: 2 });
         const xPoints = [new THREE.Vector3(-axisLength, 0, 0), new THREE.Vector3(axisLength, 0, 0)];
         const xGeometry = new THREE.BufferGeometry().setFromPoints(xPoints);
         const xLine = new THREE.Line(xGeometry, xMaterial);
-        this.scene.add(xLine);
+        this.axesGroup.add(xLine);
 
         // Y轴 (绿色)
         const yMaterial = new THREE.LineBasicMaterial({ color: 0x8ae6a0, linewidth: 2 });
         const yPoints = [new THREE.Vector3(0, -axisLength, 0), new THREE.Vector3(0, axisLength, 0)];
         const yGeometry = new THREE.BufferGeometry().setFromPoints(yPoints);
         const yLine = new THREE.Line(yGeometry, yMaterial);
-        this.scene.add(yLine);
+        this.axesGroup.add(yLine);
 
         // Z轴 (蓝色)
         const zMaterial = new THREE.LineBasicMaterial({ color: 0x89cff0, linewidth: 2 });
         const zPoints = [new THREE.Vector3(0, 0, -axisLength), new THREE.Vector3(0, 0, axisLength)];
         const zGeometry = new THREE.BufferGeometry().setFromPoints(zPoints);
         const zLine = new THREE.Line(zGeometry, zMaterial);
-        this.scene.add(zLine);
+        this.axesGroup.add(zLine);
 
         // 箭头
         const arrowXGeo = new THREE.ConeGeometry(arrowSize, arrowSize * 2, 8);
         const arrowX = new THREE.Mesh(arrowXGeo, new THREE.MeshBasicMaterial({ color: 0xe68a8a }));
         arrowX.position.set(axisLength, 0, 0);
         arrowX.rotation.z = -Math.PI / 2;
-        this.scene.add(arrowX);
+        this.axesGroup.add(arrowX);
 
         const arrowY = new THREE.Mesh(arrowXGeo.clone(), new THREE.MeshBasicMaterial({ color: 0x8ae6a0 }));
         arrowY.position.set(0, axisLength, 0);
-        this.scene.add(arrowY);
+        this.axesGroup.add(arrowY);
 
         const arrowZ = new THREE.Mesh(arrowXGeo.clone(), new THREE.MeshBasicMaterial({ color: 0x89cff0 }));
         arrowZ.position.set(0, 0, axisLength);
         arrowZ.rotation.x = Math.PI / 2;
-        this.scene.add(arrowZ);
+        this.axesGroup.add(arrowZ);
 
         // 标签
         this.axisLabels = {
@@ -97,6 +100,9 @@ export class SceneManager {
             y: this.createAxisLabel('Y', 0x8ae6a0, [0, axisLength + 0.3, 0]),
             z: this.createAxisLabel('Z', 0x89cff0, [0, 0, axisLength + 0.3])
         };
+
+        // 将坐标轴组添加到场景
+        this.scene.add(this.axesGroup);
     }
 
     /**
@@ -118,7 +124,7 @@ export class SceneManager {
         const sprite = new THREE.Sprite(spriteMaterial);
         sprite.position.set(...position);
         sprite.scale.set(0.5, 0.5, 1);
-        this.scene.add(sprite);
+        this.axesGroup.add(sprite);  // 添加到坐标轴组
 
         return sprite;
     }
@@ -155,10 +161,9 @@ export class SceneManager {
      * 切换坐标轴显示
      */
     toggleAxes() {
-        const visible = !this.axisLabels.x.visible;
-        Object.values(this.axisLabels).forEach(label => {
-            label.visible = visible;
-        });
+        if (this.axesGroup) {
+            this.axesGroup.visible = !this.axesGroup.visible;
+        }
     }
 
     /**

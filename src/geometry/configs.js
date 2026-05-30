@@ -387,6 +387,31 @@ export const GEOMETRY_CONFIGS = {
             ['A', 'E'], ['C', 'E'], ['B', 'E'], ['D', 'E'],
             ['A', 'F'], ['C', 'F'], ['B', 'F'], ['D', 'F']
         ]
+    },
+
+    // ========================
+    // 曲面几何体（特殊处理）
+    // ========================
+    cylinder: {
+        type: 'curved',
+        curvedType: 'cylinder',
+        params: { radiusTop: 1, radiusBottom: 1, height: 2, radialSegments: 32 },
+        vertices: {},
+        faces: {}
+    },
+    cone: {
+        type: 'curved',
+        curvedType: 'cone',
+        params: { radius: 1, height: 2, radialSegments: 32 },
+        vertices: {},
+        faces: {}
+    },
+    sphere: {
+        type: 'curved',
+        curvedType: 'sphere',
+        params: { radius: 1.5, widthSegments: 32, heightSegments: 32 },
+        vertices: {},
+        faces: {}
     }
 };
 
@@ -404,5 +429,8 @@ export const GEOMETRY_NAMES = {
     pentagonalPyramid: '五棱锥',
     irregularBox: '不规则长方体',
     truncatedPyramid: '四棱台',
-    octahedron: '正八面体'
+    octahedron: '正八面体',
+    cylinder: '圆柱',
+    cone: '圆锥',
+    sphere: '球'
 };

@@ -1,0 +1,103 @@
+/* ========================================
+   Material You (Material Design 3) 主题系统
+   配色：灰白色 + 淡蓝色，简约风格
+   ======================================== */
+
+:root {
+    /* ===== 主色调 ===== */
+    --md-primary: #0ea5e9;           /* sky-500 */
+    --md-primary-light: #38bdf8;     /* sky-400 */
+    --md-primary-lighter: #7dd3fc;   /* sky-300 */
+    --md-primary-lightest: #bae6fd;  /* sky-200 */
+    --md-primary-dark: #0284c7;      /* sky-600 */
+    --md-primary-darker: #0369a1;    /* sky-700 */
+
+    /* ===== 表面色 ===== */
+    --md-surface: #ffffff;
+    --md-surface-dim: #f8fafc;       /* slate-50 */
+    --md-surface-container: #f1f5f9; /* slate-100 */
+    --md-surface-container-high: #e2e8f0; /* slate-200 */
+    --md-surface-container-highest: #cbd5e1; /* slate-300 */
+
+    /* ===== 文字色 ===== */
+    --md-on-surface: #1e293b;        /* slate-800 */
+    --md-on-surface-variant: #475569; /* slate-600 */
+    --md-on-surface-disabled: #94a3b8; /* slate-400 */
+
+    /* ===== 状态色 ===== */
+    --md-success: #22c55e;           /* green-500 */
+    --md-warning: #f59e0b;           /* amber-500 */
+    --md-error: #ef4444;             /* red-500 */
+    --md-info: #3b82f6;              /* blue-500 */
+
+    /* ===== 边框和阴影 ===== */
+    --md-outline: #e2e8f0;           /* slate-200 */
+    --md-outline-variant: #f1f5f9;   /* slate-100 */
+    --md-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --md-shadow-2: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --md-shadow-3: 0 10px 15px rgba(0, 0, 0, 0.06), 0 4px 6px rgba(0, 0, 0, 0.05);
+    --md-shadow-4: 0 20px 25px rgba(0, 0, 0, 0.06), 0 8px 10px rgba(0, 0, 0, 0.04);
+
+    /* ===== 圆角 ===== */
+    --md-radius-xs: 4px;
+    --md-radius-sm: 8px;
+    --md-radius-md: 12px;
+    --md-radius-lg: 16px;
+    --md-radius-xl: 28px;
+
+    /* ===== 间距 ===== */
+    --md-spacing-xs: 4px;
+    --md-spacing-sm: 8px;
+    --md-spacing-md: 12px;
+    --md-spacing-lg: 16px;
+    --md-spacing-xl: 24px;
+    --md-spacing-2xl: 32px;
+
+    /* ===== 字体 ===== */
+    --md-font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --md-font-size-xs: 11px;
+    --md-font-size-sm: 13px;
+    --md-font-size-md: 15px;
+    --md-font-size-lg: 17px;
+    --md-font-size-xl: 20px;
+    --md-font-size-2xl: 24px;
+
+    /* ===== 动画 ===== */
+    --md-duration-fast: 150ms;
+    --md-duration-normal: 250ms;
+    --md-duration-slow: 350ms;
+    --md-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --md-easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+    --md-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+
+    /* ===== 毛玻璃效果 ===== */
+    --md-backdrop: blur(20px);
+    --md-backdrop-bg: rgba(255, 255, 255, 0.8);
+}
+
+/* ===== 深色模式 ===== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --md-primary: #38bdf8;
+        --md-primary-light: #7dd3fc;
+        --md-primary-lighter: #bae6fd;
+        --md-primary-lightest: #e0f2fe;
+        --md-primary-dark: #0ea5e9;
+        --md-primary-darker: #0284c7;
+
+        --md-surface: #0f172a;
+        --md-surface-dim: #1e293b;
+        --md-surface-container: #334155;
+        --md-surface-container-high: #475569;
+        --md-surface-container-highest: #64748b;
+
+        --md-on-surface: #f1f5f9;
+        --md-on-surface-variant: #94a3b8;
+        --md-on-surface-disabled: #64748b;
+
+        --md-outline: #334155;
+        --md-outline-variant: #1e293b;
+
+        --md-backdrop-bg: rgba(15, 23, 42, 0.8);
+    }
+}

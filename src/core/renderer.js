@@ -10,6 +10,7 @@ export class RendererManager {
     constructor() {
         this.renderer = null;
         this.labelRenderer = null;
+        this.currentContainer = null;
 
         this.init();
     }
@@ -24,6 +25,7 @@ export class RendererManager {
             return;
         }
 
+        this.currentContainer = container;
         const width = container.clientWidth;
         const height = container.clientHeight;
 
@@ -36,8 +38,11 @@ export class RendererManager {
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.2;
+        // 设置色调映射（如果支持）
+        if (THREE.ACESFilmicToneMapping !== undefined) {
+            this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            this.renderer.toneMappingExposure = 1.2;
+        }
         container.appendChild(this.renderer.domElement);
 
         // CSS2D标签渲染器
@@ -74,6 +79,33 @@ export class RendererManager {
         if (this.labelRenderer) {
             this.labelRenderer.setSize(width, height);
         }
+    }
+
+    /**
+     * 切换容器
+     */
+    switchContainer(containerId) {
+        const newContainer = document.getElementById(containerId);
+        if (!newContainer || newContainer === this.currentContainer) return;
+
+        // 从旧容器移除
+        if (this.currentContainer) {
+            if (this.renderer && this.renderer.domElement.parentNode === this.currentContainer) {
+                this.currentContainer.removeChild(this.renderer.domElement);
+            }
+            if (this.labelRenderer && this.labelRenderer.domElement.parentNode === this.currentContainer) {
+                this.currentContainer.removeChild(this.labelRenderer.domElement);
+            }
+        }
+
+        // 添加到新容器
+        this.currentContainer = newContainer;
+        const width = newContainer.clientWidth;
+        const height = newContainer.clientHeight;
+
+        this.setSize(width, height);
+        newContainer.appendChild(this.renderer.domElement);
+        newContainer.appendChild(this.labelRenderer.domElement);
     }
 
     /**
